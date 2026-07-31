@@ -1,3 +1,8 @@
-from .app import run
+class FirebirdModule(BaseModule):
 
-__all__ = ["run"]
+    id = "firebird"
+    name = "Firebird"
+    icon = "firebird.svg"
+
+    def create_page(self):
+        return FirebirdPage()

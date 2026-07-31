@@ -1,93 +1,130 @@
+from __future__ import annotations
+
 from PySide6.QtWidgets import (
-    QMainWindow,
-    QWidget,
     QHBoxLayout,
-    QVBoxLayout,
+    QMainWindow,
     QStackedWidget,
+    QVBoxLayout,
+    QWidget,
 )
 
-from gui.sidebar import Sidebar
-from gui.dashboard import Dashboard
-from gui.page import Page
-from gui.statusbar import StatusBar
-from gui.log_panel import LogPanel
-
-from modules.database.widget import DatabaseWidget
-
 from core.logger import logger
+from core.module_manager import ModuleManager
+from gui.log_panel import LogPanel
+from gui.sidebar import Sidebar
+from gui.statusbar import StatusBar
 
 
 class MainWindow(QMainWindow):
+    """
+    Główne okno aplikacji.
+    """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
+
+        self.module_manager = ModuleManager()
+
+        self.sidebar: Sidebar
+        self.stack: QStackedWidget
+        self.log_panel: LogPanel
+
+        self._create_ui()
+        self._connect_signals()
+        self._load_modules()
+        self._initialize()
+
+    # ------------------------------------------------------------------
+    # UI
+    # ------------------------------------------------------------------
+
+    def _create_ui(self) -> None:
 
         self.setWindowTitle("Serwis Apteki MP")
         self.resize(1400, 850)
 
-        # Centralny widget
         central = QWidget()
         self.setCentralWidget(central)
 
-        # Główny układ (widoki + logi)
-        main_layout = QVBoxLayout(central)
+        root_layout = QVBoxLayout(central)
 
-        # Górna część
-        top_layout = QHBoxLayout()
+        content_layout = QHBoxLayout()
 
-        # Sidebar
         self.sidebar = Sidebar()
-        top_layout.addWidget(self.sidebar)
+        content_layout.addWidget(self.sidebar)
 
-        # Obszar roboczy
         self.stack = QStackedWidget()
+        content_layout.addWidget(self.stack, 1)
 
-        self.stack.addWidget(Dashboard())               # 0
-        self.stack.addWidget(DatabaseWidget())          # 1
-        self.stack.addWidget(Page("Firebird"))          # 2
-        self.stack.addWidget(Page("Kamsoft"))           # 3
-        self.stack.addWidget(Page("Diagnostyka"))       # 4
-        self.stack.addWidget(Page("Narzędzia"))         # 5
-        self.stack.addWidget(Page("Raporty"))           # 6
-        self.stack.addWidget(Page("Ustawienia"))        # 7
+        root_layout.addLayout(content_layout)
 
-        top_layout.addWidget(self.stack, 1)
-
-        # Dodaj górną część do głównego układu
-        main_layout.addLayout(top_layout)
-
-        # Panel logów
         self.log_panel = LogPanel()
         self.log_panel.setMaximumHeight(180)
+        root_layout.addWidget(self.log_panel)
 
-        main_layout.addWidget(self.log_panel)
-
-        # StatusBar
         self.setStatusBar(StatusBar())
 
-        # Logger
-        logger.set_callback(self.log_panel.add)
-        logger.info("Program uruchomiony")
+    # ------------------------------------------------------------------
+    # SIGNALS
+    # ------------------------------------------------------------------
 
-        # Przełączanie modułów
+    def _connect_signals(self) -> None:
+
         self.sidebar.menu.currentRowChanged.connect(
-            self.change_page
+            self._change_page
         )
 
-    def change_page(self, index):
+        logger.set_callback(self.log_panel.add)
+
+    # ------------------------------------------------------------------
+    # MODULES
+    # ------------------------------------------------------------------
+
+    def _load_modules(self) -> None:
+
+        self.module_manager.load()
+
+        self.sidebar.menu.clear()
+
+        while self.stack.count():
+
+            widget = self.stack.widget(0)
+
+            self.stack.removeWidget(widget)
+
+            widget.deleteLater()
+
+        for module in self.module_manager.modules:
+
+            self.sidebar.menu.addItem(module.name)
+
+            self.stack.addWidget(module.widget)
+
+    # ------------------------------------------------------------------
+    # INITIALIZATION
+    # ------------------------------------------------------------------
+
+    def _initialize(self) -> None:
+
+        if self.module_manager.modules:
+            self.sidebar.menu.setCurrentRow(0)
+
+        logger.info("Program uruchomiony.")
+
+    # ------------------------------------------------------------------
+    # EVENTS
+    # ------------------------------------------------------------------
+
+    def _change_page(self, index: int) -> None:
+
+        if index < 0:
+            return
 
         self.stack.setCurrentIndex(index)
 
-        pages = [
-            "Dashboard",
-            "Bazy danych",
-            "Firebird",
-            "Kamsoft",
-            "Diagnostyka",
-            "Narzędzia",
-            "Raporty",
-            "Ustawienia",
-        ]
+        try:
+            module = self.module_manager.modules[index]
+        except IndexError:
+            return
 
-        if 0 <= index < len(pages):
-            logger.info(f"Wybrano moduł: {pages[index]}")
+        logger.info(f"Wybrano moduł: {module.name}")
