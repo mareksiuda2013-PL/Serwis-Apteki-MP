@@ -7,10 +7,11 @@ from pathlib import Path
 @dataclass(slots=True)
 class FirebirdInfo:
     """
-    Informacje o zainstalowanym Firebirdzie.
+    Informacje o wykrytej instalacji Firebird.
     """
 
     installed: bool = False
+    exists: bool = False
 
     version: str = ""
     architecture: str = ""
@@ -31,3 +32,9 @@ class FirebirdInfo:
     port: int = 3050
 
     guardian: bool = False
+
+    gbak_exists: bool = False
+    gfix_exists: bool = False
+    isql_exists: bool = False
+    fbclient_exists: bool = False
+    firebird_conf_exists: bool = False

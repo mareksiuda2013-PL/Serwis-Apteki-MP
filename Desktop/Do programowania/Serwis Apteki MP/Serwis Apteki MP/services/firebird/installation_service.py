@@ -51,3 +51,15 @@ class InstallationService:
                 continue
 
         return installations
+
+    def first_installation(self) -> FirebirdInstallation | None:
+        """
+        Zwraca pierwszą znalezioną instalację Firebird lub None.
+        """
+
+        installations = self.find_installations()
+
+        if not installations:
+            return None
+
+        return installations[0]
