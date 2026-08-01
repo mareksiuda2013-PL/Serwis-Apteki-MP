@@ -14,15 +14,18 @@ installation = InstallationService().first_installation()
 
 client = FirebirdClient(installation)
 
-ok, output = client.execute(
-    database=cfg.database,
-    user=cfg.user,
-    password=cfg.password,
-    sql="""
-SELECT CURRENT_USER
-FROM RDB$DATABASE;
-""",
-)
+print(client.fetch_one(
+    cfg.database,
+    cfg.user,
+    cfg.password,
+    "SELECT CURRENT_USER FROM RDB$DATABASE;"
+))
 
-print(ok)
-print(output)
+print()
+
+print(client.fetch_all(
+    cfg.database,
+    cfg.user,
+    cfg.password,
+    "SELECT FIRST 5 RDB$RELATION_NAME FROM RDB$RELATIONS;"
+))
