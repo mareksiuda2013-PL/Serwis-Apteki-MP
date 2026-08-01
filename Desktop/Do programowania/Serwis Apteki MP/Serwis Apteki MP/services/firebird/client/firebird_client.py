@@ -1,28 +1,15 @@
 from __future__ import annotations
 
 import subprocess
-from pathlib import Path
+
+from services.firebird.installation_service import FirebirdInstallation
 
 
 class FirebirdClient:
 
-    def __init__(self, firebird_path: str | Path):
+    def __init__(self, installation: FirebirdInstallation):
 
-        root = Path(firebird_path)
-
-        candidates = [
-            root / "isql",
-            root / "isql.exe",
-            root / "bin" / "isql",
-            root / "bin" / "isql.exe",
-        ]
-
-        self.isql = None
-
-        for file in candidates:
-            if file.exists():
-                self.isql = file
-                break
+        self.installation = installation
 
     def execute(
         self,
@@ -32,26 +19,44 @@ class FirebirdClient:
         sql: str,
     ) -> tuple[bool, str]:
 
-        if self.isql is None:
-            return False, "Nie znaleziono programu ISQL."
+        if self.installation is None:
+            return False, "Brak instalacji Firebird."
+
+        if self.installation.isql is None:
+            return False, "Nie znaleziono programu isql."
+
+        script = (
+    "SET HEADING OFF;\n"
+    "SET LIST OFF;\n"
+    "SET ECHO OFF;\n"
+    f"{sql.strip()}\n"
+    "QUIT;\n"
+)
 
         result = subprocess.run(
             [
-                str(self.isql),
+                str(self.installation.isql),
                 "-user",
                 user,
                 "-password",
                 password,
                 database,
             ],
-            input=sql + "\nquit;\n",
+            input=script,
             capture_output=True,
             text=True,
             encoding="utf-8",
             errors="ignore",
         )
 
-        if result.returncode != 0:
-            return False, result.stderr
+        output = (
+            result.stdout
+            .replace("SQL>", "")
+            .replace("CON>", "")
+            .strip()
+        )
 
-        return True, result.stdout
+        if result.returncode != 0:
+            return False, result.stderr.strip()
+
+        return True, output
