@@ -1,0 +1,101 @@
+Moduł: Odbudowa bazy
+Zakładka 1 - Przygotowanie
+□ Zamknij programy
+
+□ Zatrzymaj Firebird
+
+□ Wykonaj kopię bezpieczeństwa
+
+□ Backup FBK
+
+□ Restore
+
+□ Validate
+
+□ GFix
+
+□ Sweep
+
+□ Podmień bazę
+
+□ Uruchom usługi
+
+□ Uruchom ponownie aplikacje
+
+Użytkownik sam decyduje, które kroki mają być wykonane.
+
+Zakładka 2 - Procesy
+
+To będzie edytowalna tabela.
+
+Włącz	Proces	Opis	Akcja
+✅	APMAN.EXE	Menedżer APW	Zamknij
+✅	APW.EXE	Apteka	Zamknij
+✅	KSSTART.EXE	Starter	Zamknij
+⬜	EXCEL.EXE	Opcjonalnie	Zamknij
+
+Przyciski:
+
+Dodaj
+
+Usuń
+
+Edytuj
+
+Import
+
+Eksport
+
+Przywróć domyślne
+
+Lista byłaby zapisana np. w pliku JSON, więc można ją łatwo przenosić między komputerami.
+
+Zakładka 3 - Usługi
+
+Analogicznie:
+
+FirebirdServerDefaultInstance
+
+FirebirdGuardianDefaultInstance
+
+SQL Server
+
+....
+
+Dodaj
+
+Usuń
+
+Restart
+
+Nie wpisujemy nazw na sztywno.
+
+Zakładka 4 - Ścieżki
+WAPTEKA.FDB
+
+Katalog Backup
+
+Katalog Restore
+
+Katalog Roboczy
+
+Katalog Logów
+Zakładka 5 - Raport
+
+Po wszystkim:
+
+Backup OK
+
+Restore OK
+
+Validate OK
+
+GFix OK
+
+Sweep OK
+
+Nowy FDB utworzony
+
+Czas
+
+Log

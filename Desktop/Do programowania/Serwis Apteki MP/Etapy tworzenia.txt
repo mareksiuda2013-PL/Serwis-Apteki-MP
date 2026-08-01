@@ -1,0 +1,39 @@
+Pierwsze moduły (MVP)
+
+Żeby nie próbować zrobić wszystkiego naraz, proponuję podzielić rozwój na etapy.
+
+Etap 1 – Fundament
+✅ Główne okno
+✅ Menu boczne
+✅ Panel logów
+✅ Plik config.ini
+✅ Uruchamianie jako Administrator
+✅ Wersjonowanie
+✅ System logowania
+Etap 2 – Bazy danych
+Backup FDB
+Backup FBK
+Restore FBK
+Odbudowa FDB
+GFix
+Sweep
+Validate
+Etap 3 – Firebird
+Stop
+Start
+Restart
+Guardian
+Automatyczne wykrywanie instalacji
+Informacje o wersji
+Etap 4 – Kamsoft
+Zamknięcie procesów
+Archiwizacja
+Automatyczne wykrywanie katalogów
+Narzędzia administracyjne
+Etap 5 – Diagnostyka
+Raport komputera
+Internet
+Dyski
+SMART
+RAM
+Procesy

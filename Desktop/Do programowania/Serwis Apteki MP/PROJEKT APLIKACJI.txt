@@ -1,0 +1,18 @@
+PROJEKT APLIKACJI
+Serwis Apteki MP
+Motto
+
+Jedno narzędzie. Wszystkie zadania serwisowe.
+
+Filozofia programu
+
+Program ma być:
+
+prosty dla początkującego serwisanta,
+szybki dla doświadczonego,
+bezpieczny dla danych,
+maksymalnie zautomatyzowany.
+
+Zasada numer 1:
+
+Jedno kliknięcie = jedno zadanie.

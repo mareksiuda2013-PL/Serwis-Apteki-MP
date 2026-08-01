@@ -1,0 +1,53 @@
+Serwis Apteki MP
+│
+├── Dashboard
+│
+├── Bazy danych
+│   ├── Backup
+│   ├── Restore
+│   ├── Odbudowa FDB (Backup → Restore → nowy FDB)
+│   ├── GFix
+│   ├── Sweep
+│   ├── Validate
+│   ├── Statystyki bazy
+│   └── Historia operacji
+│
+├── Firebird
+│   ├── Usługi
+│   ├── Guardian
+│   ├── Konfiguracja
+│   ├── Logi
+│   └── Diagnostyka
+│
+├── Kamsoft
+│   ├── Zamknij programy
+│   ├── Archiwizacja
+│   ├── Aktualizacje
+│   ├── KS-AOW
+│   ├── KS-APW
+│   ├── KSeF
+│   └── Narzędzia
+│
+├── Diagnostyka
+│   ├── Dyski
+│   ├── RAM
+│   ├── SMART
+│   ├── Sieć
+│   ├── Internet
+│   ├── Usługi Windows
+│   ├── Porty
+│   └── Raport
+│
+├── Narzędzia
+│   ├── Routery
+│   ├── Drukarki
+│   ├── AnyDesk
+│   ├── TeamViewer
+│   ├── UltraVNC
+│   └── Kalkulatory
+│
+├── Raporty
+│
+├── Ustawienia
+│
+└── Logi

@@ -1,0 +1,207 @@
+ETAP 0 - Projekt (1-2 dni)
+
+To robimy tylko raz.
+
+1. Identyfikacja wizualna
+Logo
+Ikona
+Kolorystyka
+Czcionki
+Styl okien
+
+To będzie "twarz" programu.
+
+2. Makiety
+
+Rysujemy wszystkie okna.
+
+Na przykład:
+
+Dashboard
+
+Bazy
+
+Firebird
+
+Kamsoft
+
+Diagnostyka
+
+Raporty
+
+Ustawienia
+
+Jeszcze bez kodu.
+
+3. Architektura
+
+To już mamy w dużej części.
+
+4. Standard kodu
+
+Na przykład:
+
+modules/
+
+services/
+
+core/
+
+gui/
+
+resources/
+ETAP 1 - Silnik programu
+
+To będzie fundament.
+
+config
+
+logger
+
+ustawienia
+
+system modułów
+
+menu
+
+status
+
+uprawnienia administratora
+
+Dopóki to nie działa, nie piszemy żadnego backupu.
+
+ETAP 2 - Dashboard
+
+To będzie pierwszy ekran.
+
+Wyobrażam go sobie tak:
+
+╔════════════════════════════════════════════╗
+║ Serwis Apteki MP                           ║
+╠════════════════════════════════════════════╣
+║ Firebird           🟢                      ║
+║ Kamsoft            🟢                      ║
+║ Internet           🟢                      ║
+║ Administrator      🟢                      ║
+║                                         ║
+║ Ostatni backup                           ║
+║                                         ║
+║ Ostatnia odbudowa                        ║
+║                                         ║
+║ Wolne miejsce                            ║
+║                                         ║
+║ Wersja programu                          ║
+╚════════════════════════════════════════════╝
+ETAP 3
+
+Dopiero wtedy
+
+Backup
+ETAP 4
+Restore
+ETAP 5
+Odbudowa
+Ale...
+
+Ja chciałbym zrobić coś jeszcze.
+
+Serwis Apteki MP ma mieć własną bazę danych.
+
+Na początku pomyślałeś pewnie:
+
+"Po co?"
+
+Już tłumaczę.
+
+Program będzie pamiętał:
+
+wszystkie wykonane backupy,
+wszystkie odbudowy,
+wszystkie raporty,
+historię komputerów,
+historię aptek,
+listę procesów,
+listę usług,
+profile klientów,
+konfigurację.
+
+To oznacza, że za pół roku wejdziesz do klienta, otworzysz jego profil i od razu zobaczysz:
+
+Apteka "Centrum"
+
+Firebird 2.5.9
+
+APW 2026.1
+
+ostatni backup
+
+ostatnia odbudowa
+
+ostatni SMART
+
+router
+
+drukarka
+
+notatki
+
+ostatni serwisant
+
+To już nie będzie tylko program.
+
+To będzie system serwisowy.
+
+I teraz mój największy pomysł.
+Zamiast config.ini
+
+Tworzymy własną bazę.
+
+Na przykład SQLite.
+
+SerwisMP.db
+
+Tam będzie wszystko.
+
+Nie będziemy mieli:
+
+config.ini
+
+services.ini
+
+paths.ini
+
+backup.ini
+
+users.ini
+
+Tylko jedną bazę.
+
+Jest szybsza.
+
+Łatwiejsza.
+
+Bezpieczniejsza.
+
+Bardziej profesjonalna.
+
+I na koniec coś ważnego
+
+Ja proponuję, żebyśmy ten projekt potraktowali jak produkt, a nie eksperyment. Oznacza to, że od pierwszego dnia będziemy mieli:
+
+numerację wersji,
+listę funkcji,
+plan rozwoju,
+repozytorium kodu (Git),
+dokumentację techniczną,
+listę zmian (changelog),
+system zgłaszania pomysłów i błędów.
+
+Dzięki temu za rok nie będziemy się zastanawiać, "co właściwie miało działać", tylko będziemy rozwijać uporządkowany projekt.
+
+Moja propozycja pierwszego kamienia milowego (v0.1 Alpha)
+
+Niech pierwsza wersja będzie miała tylko jeden cel:
+
+Uruchomić aplikację, wyświetlić profesjonalny interfejs, zapisać ustawienia do własnej bazy SQLite i przygotować system modułów.
+
+Jeżeli zrobimy ten fundament dobrze, to kolejne moduły (Backup, Restore, Firebird, Diagnostyka itd.) będą już "dokładane", a nie "wbudowywane". Moim zdaniem to będzie najlepsza inwestycja czasu na starcie.

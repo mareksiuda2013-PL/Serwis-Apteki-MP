@@ -1,0 +1,53 @@
+SerwisAptekiMP/
+│
+├── main.py                    # Punkt startowy
+├── requirements.txt           # Biblioteki
+├── README.md
+├── CHANGELOG.md
+├── LICENSE
+│
+├── core/                      # Silnik aplikacji
+│   ├── __init__.py
+│   ├── app.py                 # Zarządzanie aplikacją
+│   ├── config.py              # Konfiguracja
+│   ├── database.py            # SQLite
+│   ├── logger.py              # Logowanie
+│   ├── settings.py            # Ustawienia
+│   ├── version.py             # Wersja
+│   └── security.py            # Uprawnienia
+│
+├── gui/
+│   ├── __init__.py
+│   ├── main_window.py
+│   ├── sidebar.py
+│   ├── header.py
+│   ├── statusbar.py
+│   ├── dashboard.py
+│   └── theme.py
+│
+├── modules/
+│   ├── backup/
+│   ├── restore/
+│   ├── rebuild/
+│   ├── firebird/
+│   ├── kamsoft/
+│   ├── diagnostics/
+│   ├── reports/
+│   └── tools/
+│
+├── services/
+│   ├── process_service.py
+│   ├── firebird_service.py
+│   ├── windows_service.py
+│   └── network_service.py
+│
+├── resources/
+│   ├── icons/
+│   ├── images/
+│   └── styles/
+│
+├── data/
+│   ├── SerwisMP.db
+│   └── logs/
+│
+└── temp/

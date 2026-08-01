@@ -1,0 +1,234 @@
+A teraz moje bardziej ambitne pomysły 😀
+1. Tryb "Jedno kliknięcie"
+
+Nie wybierasz nic.
+
+Klikasz
+
+Napraw bazę
+
+Program sam wykonuje:
+
+✔ zamknięcie procesów
+
+✔ backup
+
+✔ restore
+
+✔ validate
+
+✔ sweep
+
+✔ podmianę
+
+✔ restart Firebird
+
+✔ raport
+
+2. Analiza bazy
+
+Program odczytuje:
+
+ODS
+
+Page Size
+
+Forced Writes
+
+Sweep Interval
+
+Liczba tabel
+
+Liczba rekordów
+
+Rozmiar indeksów
+
+Fragmentacja
+
+i pokazuje ocenę.
+
+3. Inteligentna diagnostyka
+
+Zamiast komunikatu
+
+gbak failed
+
+program napisze
+
+Prawdopodobna przyczyna:
+
+• uszkodzony indeks
+
+• brak miejsca
+
+• baza otwarta
+
+• usługa zatrzymana
+
+i zaproponuje kolejne kroki.
+
+4. Historia komputera
+
+Każdy komputer miałby własną historię.
+
+Apteka X
+
+15 backupów
+
+3 odbudowy
+
+2 awarie
+
+ostatnia naprawa
+
+ostatni Firebird
+
+ostatni SMART
+
+To ułatwi śledzenie powtarzających się problemów.
+
+5. Profil apteki
+
+Tworzymy profil:
+
+Apteka ABC
+
+Firebird 2.5
+
+KS APW
+
+Router Huawei
+
+Drukarka Brother
+
+KSeF
+
+Ścieżki
+
+Numery portów
+
+Hasła (opcjonalnie, szyfrowane)
+
+Po otwarciu profilu wszystkie ustawienia są gotowe.
+
+6. Asystent serwisowy
+
+Program pyta:
+
+Co się dzieje?
+
+Użytkownik wybiera:
+
+Nie działa APW
+
+Baza uszkodzona
+
+Brak Internetu
+
+Problem z KSeF
+
+Problem z drukarką
+
+Problem z Firebird
+
+A aplikacja prowadzi przez gotową procedurę diagnostyczną.
+
+7. Centrum wiedzy
+
+Klikasz na błąd:
+
+335544344
+
+i od razu dostajesz:
+
+opis błędu,
+najczęstsze przyczyny,
+proponowane rozwiązania,
+powiązane procedury.
+
+To byłaby własna baza wiedzy rozwijana razem z aplikacją.
+
+Mój "killer feature"
+
+To jest funkcja, której chyba jeszcze nie widziałem w narzędziach serwisowych.
+
+Makra serwisowe
+
+Przykład:
+
+Makro:
+"Odbudowa Firebird 2.5"
+
+↓
+
+zamknij procesy
+
+↓
+
+backup
+
+↓
+
+restore
+
+↓
+
+validate
+
+↓
+
+sweep
+
+↓
+
+restart Firebird
+
+↓
+
+archiwizacja KS
+
+↓
+
+raport PDF
+
+Albo:
+
+Makro:
+"Przygotowanie do aktualizacji"
+
+↓
+
+sprawdź miejsce
+
+↓
+
+backup
+
+↓
+
+eksport konfiguracji
+
+↓
+
+zamknij KS
+
+↓
+
+wykonaj archiwizację
+
+Serwisant tworzy własne makra z gotowych "klocków". Nie trzeba pisać kodu — układa się sekwencję działań jak w automatyzacji. To pozwoli dostosować program do różnych klientów i różnych wersji Kamsoft.
+
+Moja propozycja architektoniczna
+
+Jeżeli mamy budować ten projekt przez dłuższy czas, to proponuję jedną zasadę:
+
+Każda funkcja w programie jest niezależnym modułem z jasno zdefiniowanymi wejściami i wyjściami.
+
+Przykładowo:
+
+moduł Backup nie wie nic o GUI,
+moduł Firebird nie wie nic o Kamsoft,
+moduł Procesy potrafi tylko wykrywać i zamykać procesy,
+moduł Raporty tylko zbiera wyniki i generuje raport.
+
+Dzięki temu będziemy mogli testować każdy element osobno, a dodawanie nowych możliwości nie będzie wymagało przebudowy istniejącego kodu. Myślę, że przy skali, do której zmierza Serwis Apteki MP, to będzie jedna z najważniejszych decyzji projektowych.

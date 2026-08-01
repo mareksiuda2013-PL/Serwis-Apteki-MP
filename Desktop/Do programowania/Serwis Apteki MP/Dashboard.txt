@@ -1,0 +1,101 @@
+Dashboard
+
+Po uruchomieniu użytkownik od razu widzi stan komputera.
+
+✔ Firebird działa
+
+✔ Kamsoft wykryty
+
+✔ Internet OK
+
+✔ Ostatni backup
+
+✔ Wolne miejsce
+
+✔ RAM
+
+✔ Temperatura dysków
+
+✔ Aktualna wersja programu
+
+To jest ekran startowy.
+
+Moduł Bazy Danych
+
+To będzie najważniejszy moduł.
+
+Backup FDB
+
+Backup FBK
+
+Restore FBK
+
+Odbudowa FDB
+
+Validate
+
+Sweep
+
+GFix
+
+Statystyki
+
+Optymalizacja
+
+Historia operacji
+Odbudowa bazy
+
+To będzie jedna z najmocniejszych funkcji.
+
+Program wykona:
+
+zamknij KS
+
+↓
+
+stop Firebird
+
+↓
+
+backup
+
+↓
+
+restore
+
+↓
+
+stwórz NOWY FDB
+
+↓
+
+validate
+
+↓
+
+raport
+
+↓
+
+podmień bazę
+
+Przy każdym kroku będzie możliwość zatrzymania procesu i zapisania raportu.
+
+Firebird
+Informacje
+
+Usługi
+
+Guardian
+
+Parametry
+
+Wersja
+
+ODS
+
+Forced Writes
+
+Sweep
+
+Logi

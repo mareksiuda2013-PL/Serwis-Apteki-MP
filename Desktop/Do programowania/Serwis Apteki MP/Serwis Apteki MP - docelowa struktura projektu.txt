@@ -1,0 +1,41 @@
+SerwisAptekiMP
+│
+├── main.py
+│
+├── gui/
+│   ├── dashboard.py
+│   ├── menu.py
+│   ├── statusbar.py
+│   ├── dialogs.py
+│   └── widgets.py
+│
+├── modules/
+│   ├── database/
+│   ├── firebird/
+│   ├── kamsoft/
+│   ├── diagnostics/
+│   ├── printers/
+│   ├── routers/
+│   ├── reports/
+│   └── updater/
+│
+├── core/
+│   ├── logger.py
+│   ├── config.py
+│   ├── admin.py
+│   ├── paths.py
+│   ├── process.py
+│   ├── service.py
+│   └── helpers.py
+│
+├── resources/
+│   ├── icons/
+│   ├── images/
+│   └── themes/
+│
+├── logs/
+│
+├── temp/
+│
+└── config/
+    └── config.ini
