@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from PySide6.QtWidgets import (
+    QFileDialog,
     QWidget,
     QLabel,
     QPushButton,
@@ -30,6 +31,14 @@ class InformationTab(QWidget):
         self.lbl_bin = QLabel("-")
         self.lbl_port = QLabel("-")
 
+        self.lbl_gbak = QLabel("-")
+        self.lbl_gfix = QLabel("-")
+        self.lbl_isql = QLabel("-")
+        self.lbl_fbclient = QLabel("-")
+
+        self.lbl_db_size = QLabel("-")
+        self.lbl_db_date = QLabel("-")
+
         self.form.addRow("Zainstalowany:", self.lbl_installed)
         self.form.addRow("Wersja:", self.lbl_version)
         self.form.addRow("Usługa:", self.lbl_service)
@@ -38,12 +47,24 @@ class InformationTab(QWidget):
         self.form.addRow("BIN:", self.lbl_bin)
         self.form.addRow("Port:", self.lbl_port)
 
+        self.form.addRow("gbak.exe:", self.lbl_gbak)
+        self.form.addRow("gfix.exe:", self.lbl_gfix)
+        self.form.addRow("isql.exe:", self.lbl_isql)
+        self.form.addRow("fbclient.dll:", self.lbl_fbclient)
+
+        self.form.addRow("Rozmiar bazy:", self.lbl_db_size)
+        self.form.addRow("Data modyfikacji:", self.lbl_db_date)
+
         layout.addLayout(self.form)
 
         self.refresh_button = QPushButton("Odśwież")
         self.refresh_button.clicked.connect(self.refresh)
-
         layout.addWidget(self.refresh_button)
+
+        self.database_button = QPushButton("Wybierz bazę")
+        self.database_button.clicked.connect(self.select_database)
+        layout.addWidget(self.database_button)
+
         layout.addStretch()
 
         self.refresh()
@@ -59,15 +80,31 @@ class InformationTab(QWidget):
         self.lbl_install.setText(str(info.install_path) if info.install_path else "-")
         self.lbl_bin.setText(str(info.bin_path) if info.bin_path else "-")
         self.lbl_port.setText(str(info.port))
-        self.lbl_gbak = QLabel("-")
-        self.lbl_gfix = QLabel("-")
-        self.lbl_isql = QLabel("-")
-        self.lbl_fbclient = QLabel("-")
-        self.form.addRow("gbak.exe", self.lbl_gbak)
-        self.form.addRow("gfix.exe", self.lbl_gfix)
-        self.form.addRow("isql.exe", self.lbl_isql)
-        self.form.addRow("fbclient.dll", self.lbl_fbclient)
+
         self.lbl_gbak.setText("✔" if info.gbak_exists else "✖")
         self.lbl_gfix.setText("✔" if info.gfix_exists else "✖")
         self.lbl_isql.setText("✔" if info.isql_exists else "✖")
         self.lbl_fbclient.setText("✔" if info.fbclient_exists else "✖")
+
+    def select_database(self):
+
+        file_name, _ = QFileDialog.getOpenFileName(
+            self,
+            "Wybierz bazę Firebird",
+            "",
+            "Firebird (*.fdb *.gdb)",
+        )
+
+        if not file_name:
+            return
+
+        info = self.controller.inspect_database(file_name)
+
+        self.lbl_db_size.setText(f"{info.size_gb:.2f} GB")
+
+        if info.modified:
+            self.lbl_db_date.setText(
+                info.modified.strftime("%Y-%m-%d %H:%M")
+            )
+        else:
+            self.lbl_db_date.setText("-")

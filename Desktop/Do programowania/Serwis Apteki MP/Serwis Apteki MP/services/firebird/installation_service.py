@@ -1,65 +1,68 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
-import winreg
 
-from models.firebird_installation import FirebirdInstallation
+
+@dataclass(slots=True)
+class FirebirdInstallation:
+    install_path: Path
+    version: str = ""
+
+    fbclient: Path | None = None
+    isql: Path | None = None
+    gbak: Path | None = None
+    gfix: Path | None = None
+    gstat: Path | None = None
+    firebird_conf: Path | None = None
 
 
 class InstallationService:
-    """
-    Wyszukuje wszystkie zainstalowane wersje Firebird.
-    """
-
-    REGISTRY_KEYS = (
-        r"SOFTWARE\Firebird Project\Firebird Server\Instances",
-        r"SOFTWARE\WOW6432Node\Firebird Project\Firebird Server\Instances",
-    )
-
-    def find_installations(self) -> list[FirebirdInstallation]:
-
-        installations: list[FirebirdInstallation] = []
-
-        for registry_key in self.REGISTRY_KEYS:
-
-            try:
-                with winreg.OpenKey(
-                    winreg.HKEY_LOCAL_MACHINE,
-                    registry_key,
-                ) as key:
-
-                    count = winreg.QueryInfoKey(key)[1]
-
-                    for index in range(count):
-
-                        name, value, _ = winreg.EnumValue(key, index)
-
-                        path = Path(value)
-
-                        installations.append(
-                            FirebirdInstallation(
-                                version=name,
-                                install_path=path,
-                                bin_path=path / "bin",
-                                firebird_exe=path / "bin" / "firebird.exe",
-                                fbclient_path=path / "fbclient.dll",
-                                service_name=f"FirebirdServer{name.replace('.', '')}",
-                            )
-                        )
-
-            except FileNotFoundError:
-                continue
-
-        return installations
 
     def first_installation(self) -> FirebirdInstallation | None:
-        """
-        Zwraca pierwszą znalezioną instalację Firebird lub None.
-        """
 
-        installations = self.find_installations()
+        roots = [
+            Path(r"C:\Program Files\Firebird"),
+            Path(r"C:\Program Files (x86)\Firebird"),
+        ]
 
-        if not installations:
-            return None
+        for root in roots:
 
-        return installations[0]
+            if not root.exists():
+                continue
+
+            for folder in root.iterdir():
+
+                if not folder.is_dir():
+                    continue
+
+                if not folder.name.lower().startswith("firebird"):
+                    continue
+
+                fb = FirebirdInstallation(
+                    install_path=folder,
+                    version=folder.name,
+                )
+
+                fb.fbclient = self.find(folder, "fbclient.dll")
+                fb.isql = self.find(folder, "isql", "isql.exe", "isql.com")
+                fb.gbak = self.find(folder, "gbak", "gbak.exe")
+                fb.gfix = self.find(folder, "gfix", "gfix.exe")
+                fb.gstat = self.find(folder, "gstat", "gstat.exe")
+                fb.firebird_conf = self.find(folder, "firebird.conf")
+
+                return fb
+
+        return None
+
+    def find(self, root: Path, *names: str) -> Path | None:
+
+        wanted = {name.lower() for name in names}
+
+        for file in root.rglob("*"):
+
+            if file.name.lower() in wanted:
+                return file
+
+        return None
+

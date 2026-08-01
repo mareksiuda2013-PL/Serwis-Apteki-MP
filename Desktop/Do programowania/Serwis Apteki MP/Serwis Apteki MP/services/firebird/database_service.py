@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 from models import DatabaseInfo
@@ -7,11 +8,11 @@ from models import DatabaseInfo
 
 class DatabaseService:
 
-    def inspect(self, database_path: str) -> DatabaseInfo:
+    def inspect(self, database: str | Path) -> DatabaseInfo:
 
         info = DatabaseInfo()
 
-        path = Path(database_path)
+        path = Path(database)
 
         info.path = path
 
@@ -25,8 +26,6 @@ class DatabaseService:
         info.size_bytes = stat.st_size
         info.size_mb = round(stat.st_size / 1024 / 1024, 2)
         info.size_gb = round(stat.st_size / 1024 / 1024 / 1024, 2)
-
-        from datetime import datetime
 
         info.modified = datetime.fromtimestamp(
             stat.st_mtime
