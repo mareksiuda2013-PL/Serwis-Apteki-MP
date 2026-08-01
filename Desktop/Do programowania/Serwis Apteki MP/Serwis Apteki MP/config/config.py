@@ -10,13 +10,11 @@ class Config:
 
         self.path = Path(__file__).resolve().parent / "config.ini"
 
-        print("CONFIG:", self.path)
 
         self.parser = ConfigParser()
 
         self.parser.read(self.path, encoding="utf-8")
 
-        print("SEKCJE:", self.parser.sections())
 
     @property
     def database(self) -> str:

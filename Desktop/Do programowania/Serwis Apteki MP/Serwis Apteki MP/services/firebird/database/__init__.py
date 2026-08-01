@@ -1,0 +1,1 @@
+self.client = FirebirdClient(installation)

@@ -1,22 +1,19 @@
 from __future__ import annotations
 
-import subprocess
-
+from config import Config
+from core.process_runner import ProcessRunner
 from services.firebird.installation_service import FirebirdInstallation
 
 
 class FirebirdClient:
 
     def __init__(self, installation: FirebirdInstallation):
-        self.installation = installation
 
-    def execute(
-        self,
-        database: str,
-        user: str,
-        password: str,
-        sql: str,
-    ) -> tuple[bool, str]:
+        self.installation = installation
+        self.cfg = Config()
+        self.runner = ProcessRunner()
+
+    def execute(self, sql: str) -> tuple[bool, str]:
 
         if self.installation is None:
             return False, "Brak instalacji Firebird."
@@ -37,24 +34,20 @@ class FirebirdClient:
             "QUIT;\n"
         )
 
-        result = subprocess.run(
+        result = self.runner.run(
             [
                 str(self.installation.isql),
                 "-user",
-                user,
+                self.cfg.user,
                 "-password",
-                password,
-                database,
+                self.cfg.password,
+                self.cfg.database,
             ],
-            input=script,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="ignore",
+            input_text=script,
         )
 
-        if result.returncode != 0:
-            return False, result.stderr.strip()
+        if not result.success:
+            return False, result.stderr
 
         lines = []
 
@@ -62,63 +55,34 @@ class FirebirdClient:
 
             line = line.strip()
 
-            if not line:
-                continue
-
-            if line.startswith("Database:"):
-                continue
-
-            if line.startswith("SQL>"):
-                continue
-
-            if line.startswith("CON>"):
+            if (
+                not line
+                or line.startswith("Database:")
+                or line.startswith("SQL>")
+                or line.startswith("CON>")
+            ):
                 continue
 
             lines.append(line)
 
         return True, "\n".join(lines)
 
-    def fetch_one(
-        self,
-        database: str,
-        user: str,
-        password: str,
-        sql: str,
-    ) -> str | None:
+    def fetch_one(self, sql: str) -> str | None:
 
-        ok, result = self.execute(
-            database,
-            user,
-            password,
-            sql,
-        )
+        ok, result = self.execute(sql)
 
         if not ok:
             raise RuntimeError(result)
 
-        rows = [line.strip() for line in result.splitlines() if line.strip()]
+        rows = [r.strip() for r in result.splitlines() if r.strip()]
 
-        if not rows:
-            return None
+        return rows[0] if rows else None
 
-        return rows[0]
+    def fetch_all(self, sql: str) -> list[str]:
 
-    def fetch_all(
-        self,
-        database: str,
-        user: str,
-        password: str,
-        sql: str,
-    ) -> list[str]:
-
-        ok, result = self.execute(
-            database,
-            user,
-            password,
-            sql,
-        )
+        ok, result = self.execute(sql)
 
         if not ok:
             raise RuntimeError(result)
 
-        return [line.strip() for line in result.splitlines() if line.strip()]
+        return [r.strip() for r in result.splitlines() if r.strip()]
