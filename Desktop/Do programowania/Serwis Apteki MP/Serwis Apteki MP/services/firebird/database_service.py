@@ -1,34 +1,83 @@
 from __future__ import annotations
 
-from datetime import datetime
-from pathlib import Path
-
-from models import DatabaseInfo
+from config import Config
+from services.firebird.client import FirebirdClient
+from services.firebird.installation_service import InstallationService
 
 
 class DatabaseService:
 
-    def inspect(self, database: str | Path) -> DatabaseInfo:
+    def __init__(self):
 
-        info = DatabaseInfo()
+        self.cfg = Config()
 
-        path = Path(database)
+        installation = InstallationService().first_installation()
 
-        info.path = path
+        if installation is None:
+            raise RuntimeError("Nie znaleziono instalacji Firebird.")
 
-        if not path.exists():
-            return info
+        self.client = FirebirdClient(installation)
 
-        info.exists = True
+    def version(self) -> str:
 
-        stat = path.stat()
+        return self.client.fetch_one(
+            self.cfg.database,
+            self.cfg.user,
+            self.cfg.password,
+            "SELECT rdb$get_context('SYSTEM','ENGINE_VERSION') FROM rdb$database;"
+        ) or ""
 
-        info.size_bytes = stat.st_size
-        info.size_mb = round(stat.st_size / 1024 / 1024, 2)
-        info.size_gb = round(stat.st_size / 1024 / 1024 / 1024, 2)
+    def sql_dialect(self) -> int:
 
-        info.modified = datetime.fromtimestamp(
-            stat.st_mtime
+        value = self.client.fetch_one(
+            self.cfg.database,
+            self.cfg.user,
+            self.cfg.password,
+            "SELECT MON$SQL_DIALECT FROM MON$DATABASE;"
         )
 
-        return info
+        return int(value)
+
+    def page_size(self) -> int:
+
+        value = self.client.fetch_one(
+            self.cfg.database,
+            self.cfg.user,
+            self.cfg.password,
+            "SELECT MON$PAGE_SIZE FROM MON$DATABASE;"
+        )
+
+        return int(value)
+
+    def ods(self) -> str:
+
+        major = self.client.fetch_one(
+            self.cfg.database,
+            self.cfg.user,
+            self.cfg.password,
+            "SELECT MON$ODS_MAJOR FROM MON$DATABASE;"
+        )
+
+        minor = self.client.fetch_one(
+            self.cfg.database,
+            self.cfg.user,
+            self.cfg.password,
+            "SELECT MON$ODS_MINOR FROM MON$DATABASE;"
+        )
+
+        return f"{major}.{minor}"
+
+    def tables(self) -> int:
+
+        value = self.client.fetch_one(
+            self.cfg.database,
+            self.cfg.user,
+            self.cfg.password,
+            """
+            SELECT COUNT(*)
+            FROM RDB$RELATIONS
+            WHERE RDB$SYSTEM_FLAG = 0;
+            """
+        )
+
+        return int(value)
