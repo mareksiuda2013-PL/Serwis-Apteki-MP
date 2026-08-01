@@ -25,6 +25,11 @@ class InformationTab(QWidget):
 
         self.lbl_installed = QLabel("-")
         self.lbl_version = QLabel("-")
+        self.lbl_ods = QLabel("-")
+        self.lbl_dialect = QLabel("-")
+        self.lbl_page_size = QLabel("-")
+        self.lbl_tables = QLabel("-")
+
         self.lbl_service = QLabel("-")
         self.lbl_status = QLabel("-")
         self.lbl_install = QLabel("-")
@@ -40,7 +45,12 @@ class InformationTab(QWidget):
         self.lbl_db_date = QLabel("-")
 
         self.form.addRow("Zainstalowany:", self.lbl_installed)
-        self.form.addRow("Wersja:", self.lbl_version)
+        self.form.addRow("Wersja Firebird:", self.lbl_version)
+        self.form.addRow("ODS:", self.lbl_ods)
+        self.form.addRow("SQL Dialect:", self.lbl_dialect)
+        self.form.addRow("Page Size:", self.lbl_page_size)
+        self.form.addRow("Liczba tabel:", self.lbl_tables)
+
         self.form.addRow("Usługa:", self.lbl_service)
         self.form.addRow("Status:", self.lbl_status)
         self.form.addRow("Instalacja:", self.lbl_install)
@@ -74,7 +84,13 @@ class InformationTab(QWidget):
         info = self.controller.info()
 
         self.lbl_installed.setText("TAK" if info.installed else "NIE")
+
         self.lbl_version.setText(info.version or "-")
+        self.lbl_ods.setText(info.ods or "-")
+        self.lbl_dialect.setText(str(info.sql_dialect))
+        self.lbl_page_size.setText(str(info.page_size))
+        self.lbl_tables.setText(str(info.tables))
+
         self.lbl_service.setText(info.service_name or "-")
         self.lbl_status.setText(info.service_status or "-")
         self.lbl_install.setText(str(info.install_path) if info.install_path else "-")

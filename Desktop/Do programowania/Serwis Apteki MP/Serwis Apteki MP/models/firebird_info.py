@@ -38,3 +38,10 @@ class FirebirdInfo:
     isql_exists: bool = False
     fbclient_exists: bool = False
     firebird_conf_exists: bool = False
+
+    # ===== DATABASE =====
+
+    ods: str = ""
+    sql_dialect: int = 0
+    page_size: int = 0
+    tables: int = 0
