@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
+
+# Local database
+data/*.db
+data/*.sqlite
+data/*.sqlite3
+
+# Build
+build/
+dist/
+
+# PyInstaller
+*.spec
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Cache
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Temporary
+*.tmp
+*.temp
+*.bak
