@@ -960,62 +960,47 @@ class OperationsTab(QWidget):
             MendService,
         )
 
+        from services.firebird.operation_service import (
+            FirebirdOperationService,
+        )
+
         self.operation_started(
             "Trwa operacja MEND..."
         )
 
-        try:
+        operation_service = FirebirdOperationService()
 
-            result = MendService().mend()
+        result = operation_service.execute(
+            lambda: MendService().mend(),
+            "MEND",
+        )
 
-            if result.success:
+        if result.success:
 
-                self.operation_finished(
-                    "MEND zakończony pomyślnie.",
-                    "success",
-                )
-
-                QMessageBox.information(
-                    self,
-                    "MEND",
-                    result.stdout
-                    or "MEND zakończony pomyślnie.",
-                )
-
-            else:
-
-                self.operation_finished(
-                    "MEND zakończony błędem.",
-                    "error",
-                )
-
-                QMessageBox.critical(
-                    self,
-                    "MEND",
-                    result.stderr
-                    or result.stdout
-                    or "MEND nie powiódł się.",
-                )
-
-        except Exception as exc:
-
-            self.set_operations_enabled(
-                True
+            self.operation_finished(
+                "MEND zakończony pomyślnie.",
+                "success",
             )
 
-            self.set_status(
-                "Błąd MEND.",
+            QMessageBox.information(
+                self,
+                "MEND",
+                result.message
+                or "MEND zakończony pomyślnie.",
+            )
+
+        else:
+
+            self.operation_finished(
+                "MEND zakończony błędem.",
                 "error",
-            )
-
-            logger.error(
-                f"MEND ERROR: {exc}"
             )
 
             QMessageBox.critical(
                 self,
                 "MEND",
-                str(exc),
+                result.message
+                or "MEND nie powiódł się.",
             )
 
     # ======================================================
