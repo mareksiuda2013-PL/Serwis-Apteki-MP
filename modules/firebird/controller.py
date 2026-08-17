@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from services.firebird import FirebirdService
+from services.firebird.diagnostics_service import (
+    DiagnosticsService,
+)
 from services.firebird.health_service import HealthService
 from services.firebird.statistics_service import StatisticsService
 
@@ -17,6 +20,10 @@ class FirebirdController:
 
         self.health_service = (
             HealthService()
+        )
+
+        self.diagnostics_service = (
+            DiagnosticsService()
         )
 
     # ==================================================
@@ -61,6 +68,18 @@ class FirebirdController:
 
         return (
             self.statistics_service.statistics()
+        )
+
+    # ==================================================
+    # DIAGNOSTYKA
+    # ==================================================
+
+    def diagnostics(self):
+
+        stats = self.statistics()
+
+        return self.diagnostics_service.analyze(
+            stats
         )
 
     # ==================================================

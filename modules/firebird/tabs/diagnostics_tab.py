@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QFormLayout,
-    QGroupBox,
-    QHBoxLayout,
     QLabel,
     QPushButton,
     QVBoxLayout,
@@ -26,357 +23,194 @@ class DiagnosticsTab(QWidget):
         self.controller = controller
 
         # ==================================================
-        # GŁÓWNY LAYOUT
+        # LAYOUT
         # ==================================================
 
         layout = QVBoxLayout(self)
 
-        layout.setContentsMargins(
-            18,
-            18,
-            18,
-            18,
+        # ==================================================
+        # INFORMACJA O DIAGNOSTYCE
+        # ==================================================
+
+        self.diagnostic_message = QLabel(
+            "-"
         )
 
-        layout.setSpacing(
-            14
+        self.diagnostic_message.setWordWrap(
+            True
+        )
+
+        self.diagnostic_message.setMinimumHeight(
+            36
+        )
+
+        self.set_diagnostic_style(
+            "success"
+        )
+
+        layout.addWidget(
+            self.diagnostic_message
         )
 
         # ==================================================
-        # NAGŁÓWEK
+        # STATYSTYKI
         # ==================================================
 
-        header_layout = QHBoxLayout()
+        self.form = QFormLayout()
 
-        title = QLabel(
-            "Diagnostyka bazy Firebird"
+        self.lbl_ods = QLabel("-")
+        self.lbl_page_size = QLabel("-")
+        self.lbl_buffers = QLabel("-")
+        self.lbl_sweep = QLabel("-")
+
+        self.lbl_oldest = QLabel("-")
+        self.lbl_active = QLabel("-")
+        self.lbl_snapshot = QLabel("-")
+        self.lbl_next = QLabel("-")
+
+        self.lbl_dialect = QLabel("-")
+        self.lbl_generation = QLabel("-")
+        self.lbl_force_write = QLabel("-")
+        self.lbl_no_reserve = QLabel("-")
+        self.lbl_creation = QLabel("-")
+
+        self.form.addRow(
+            "ODS:",
+            self.lbl_ods,
         )
 
-        title.setStyleSheet(
-            """
-            QLabel {
-                font-size: 18px;
-                font-weight: bold;
-            }
-            """
+        self.form.addRow(
+            "Page Size:",
+            self.lbl_page_size,
         )
 
-        header_layout.addWidget(
-            title
+        self.form.addRow(
+            "Page Buffers:",
+            self.lbl_buffers,
         )
 
-        header_layout.addStretch()
+        self.form.addRow(
+            "Sweep Interval:",
+            self.lbl_sweep,
+        )
+
+        self.form.addRow(
+            "Oldest Transaction:",
+            self.lbl_oldest,
+        )
+
+        self.form.addRow(
+            "Oldest Active:",
+            self.lbl_active,
+        )
+
+        self.form.addRow(
+            "Oldest Snapshot:",
+            self.lbl_snapshot,
+        )
+
+        self.form.addRow(
+            "Next Transaction:",
+            self.lbl_next,
+        )
+
+        self.form.addRow(
+            "Database Dialect:",
+            self.lbl_dialect,
+        )
+
+        self.form.addRow(
+            "Generation:",
+            self.lbl_generation,
+        )
+
+        self.form.addRow(
+            "Force Write:",
+            self.lbl_force_write,
+        )
+
+        self.form.addRow(
+            "No Reserve:",
+            self.lbl_no_reserve,
+        )
+
+        self.form.addRow(
+            "Creation Date:",
+            self.lbl_creation,
+        )
+
+        layout.addLayout(
+            self.form
+        )
+
+        # ==================================================
+        # PRZYCISK
+        # ==================================================
 
         self.refresh_button = QPushButton(
             "Odśwież diagnostykę"
-        )
-
-        self.refresh_button.setMinimumWidth(
-            180
         )
 
         self.refresh_button.clicked.connect(
             self.refresh
         )
 
-        header_layout.addWidget(
+        layout.addWidget(
             self.refresh_button
         )
-
-        layout.addLayout(
-            header_layout
-        )
-
-        # ==================================================
-        # STATUS
-        # ==================================================
-
-        self.status_label = QLabel(
-            "Sprawdzanie..."
-        )
-
-        self.status_label.setAlignment(
-            Qt.AlignmentFlag.AlignCenter
-        )
-
-        self.status_label.setMinimumHeight(
-            38
-        )
-
-        self.status_label.setStyleSheet(
-            """
-            QLabel {
-                background: #6c757d;
-                color: white;
-                border-radius: 6px;
-                padding: 6px;
-                font-weight: bold;
-            }
-            """
-        )
-
-        layout.addWidget(
-            self.status_label
-        )
-
-        # ==================================================
-        # INFORMACJE TECHNICZNE
-        # ==================================================
-
-        technical_group = QGroupBox(
-            "Informacje techniczne"
-        )
-
-        technical_form = QFormLayout(
-            technical_group
-        )
-
-        technical_form.setHorizontalSpacing(
-            30
-        )
-
-        technical_form.setVerticalSpacing(
-            8
-        )
-
-        self.lbl_database = self._create_value_label()
-        self.lbl_ods = self._create_value_label()
-        self.lbl_page_size = self._create_value_label()
-        self.lbl_buffers = self._create_value_label()
-        self.lbl_dialect = self._create_value_label()
-        self.lbl_generation = self._create_value_label()
-        self.lbl_creation = self._create_value_label()
-
-        technical_form.addRow(
-            "Baza:",
-            self.lbl_database,
-        )
-
-        technical_form.addRow(
-            "ODS:",
-            self.lbl_ods,
-        )
-
-        technical_form.addRow(
-            "Page Size:",
-            self.lbl_page_size,
-        )
-
-        technical_form.addRow(
-            "Page Buffers:",
-            self.lbl_buffers,
-        )
-
-        technical_form.addRow(
-            "Dialect:",
-            self.lbl_dialect,
-        )
-
-        technical_form.addRow(
-            "Generation:",
-            self.lbl_generation,
-        )
-
-        technical_form.addRow(
-            "Creation Date:",
-            self.lbl_creation,
-        )
-
-        layout.addWidget(
-            technical_group
-        )
-
-        # ==================================================
-        # TRANSAKCJE
-        # ==================================================
-
-        transactions_group = QGroupBox(
-            "Transakcje"
-        )
-
-        transactions_form = QFormLayout(
-            transactions_group
-        )
-
-        transactions_form.setHorizontalSpacing(
-            30
-        )
-
-        transactions_form.setVerticalSpacing(
-            8
-        )
-
-        self.lbl_oldest = self._create_value_label()
-        self.lbl_active = self._create_value_label()
-        self.lbl_snapshot = self._create_value_label()
-        self.lbl_next = self._create_value_label()
-
-        transactions_form.addRow(
-            "Oldest Transaction:",
-            self.lbl_oldest,
-        )
-
-        transactions_form.addRow(
-            "Oldest Active:",
-            self.lbl_active,
-        )
-
-        transactions_form.addRow(
-            "Oldest Snapshot:",
-            self.lbl_snapshot,
-        )
-
-        transactions_form.addRow(
-            "Next Transaction:",
-            self.lbl_next,
-        )
-
-        layout.addWidget(
-            transactions_group
-        )
-
-        # ==================================================
-        # KONFIGURACJA BAZY
-        # ==================================================
-
-        config_group = QGroupBox(
-            "Konfiguracja bazy"
-        )
-
-        config_form = QFormLayout(
-            config_group
-        )
-
-        config_form.setHorizontalSpacing(
-            30
-        )
-
-        config_form.setVerticalSpacing(
-            8
-        )
-
-        self.lbl_sweep = self._create_value_label()
-        self.lbl_force_write = self._create_value_label()
-        self.lbl_no_reserve = self._create_value_label()
-
-        config_form.addRow(
-            "Sweep Interval:",
-            self.lbl_sweep,
-        )
-
-        config_form.addRow(
-            "Force Write:",
-            self.lbl_force_write,
-        )
-
-        config_form.addRow(
-            "No Reserve:",
-            self.lbl_no_reserve,
-        )
-
-        layout.addWidget(
-            config_group
-        )
-
-        # ==================================================
-        # ROZPYCHACZ
-        # ==================================================
 
         layout.addStretch()
 
         # ==================================================
-        # PIERWSZE ŁADOWANIE
+        # START
         # ==================================================
 
         self.refresh()
 
     # ======================================================
-    # TWORZENIE LABELA
+    # DIAGNOSTIC STYLE
     # ======================================================
 
-    def _create_value_label(self) -> QLabel:
-
-        label = QLabel(
-            "-"
-        )
-
-        label.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse
-        )
-
-        label.setStyleSheet(
-            """
-            QLabel {
-                color: #202020;
-                font-weight: normal;
-            }
-            """
-        )
-
-        return label
-
-    # ======================================================
-    # KOLOROWANIE WARTOŚCI
-    # ======================================================
-
-    def _set_value(
+    def set_diagnostic_style(
         self,
-        label: QLabel,
-        value: str,
-        color: str | None = None,
+        status: str,
     ) -> None:
 
-        label.setText(
-            str(value)
-        )
+        if status == "error":
 
-        if color:
-
-            label.setStyleSheet(
-                f"""
-                QLabel {{
-                    color: {color};
+            self.diagnostic_message.setStyleSheet(
+                """
+                QLabel {
+                    color: #b00020;
                     font-weight: bold;
-                }}
+                    padding: 6px;
+                }
+                """
+            )
+
+        elif status == "warning":
+
+            self.diagnostic_message.setStyleSheet(
+                """
+                QLabel {
+                    color: #b36b00;
+                    font-weight: bold;
+                    padding: 6px;
+                }
                 """
             )
 
         else:
 
-            label.setStyleSheet(
+            self.diagnostic_message.setStyleSheet(
                 """
                 QLabel {
-                    color: #202020;
-                    font-weight: normal;
+                    color: #267326;
+                    font-weight: bold;
+                    padding: 6px;
                 }
                 """
             )
-
-    # ======================================================
-    # STATUS
-    # ======================================================
-
-    def _set_status(
-        self,
-        text: str,
-        color: str,
-    ) -> None:
-
-        self.status_label.setText(
-            text
-        )
-
-        self.status_label.setStyleSheet(
-            f"""
-            QLabel {{
-                background: {color};
-                color: white;
-                border-radius: 6px;
-                padding: 6px;
-                font-weight: bold;
-            }}
-            """
-        )
 
     # ======================================================
     # REFRESH
@@ -384,170 +218,96 @@ class DiagnosticsTab(QWidget):
 
     def refresh(self) -> None:
 
-        self.refresh_button.setEnabled(
-            False
-        )
-
         try:
-
-            # --------------------------------------------------
-            # POBIERAMY STATYSTYKI
-            # --------------------------------------------------
 
             stats = self.controller.statistics()
 
-            # --------------------------------------------------
-            # BAZA
-            # --------------------------------------------------
-
-            try:
-
-                database = self.controller.database()
-
-            except Exception:
-
-                database = "-"
-
-            self._set_value(
-                self.lbl_database,
-                database,
-            )
-
-            # --------------------------------------------------
-            # INFORMACJE TECHNICZNE
-            # --------------------------------------------------
-
-            self._set_value(
-                self.lbl_ods,
-                stats.ods or "-",
-            )
-
-            self._set_value(
-                self.lbl_page_size,
-                stats.page_size,
-            )
-
-            self._set_value(
-                self.lbl_buffers,
-                stats.page_buffers,
-            )
-
-            self._set_value(
-                self.lbl_dialect,
-                stats.database_dialect,
-            )
-
-            self._set_value(
-                self.lbl_generation,
-                stats.generation,
-            )
-
-            self._set_value(
-                self.lbl_creation,
-                stats.creation_date or "-",
-            )
-
-            # --------------------------------------------------
-            # TRANSAKCJE
-            # --------------------------------------------------
-
-            self._set_value(
-                self.lbl_oldest,
-                stats.oldest_transaction,
-            )
-
-            self._set_value(
-                self.lbl_active,
-                stats.oldest_active,
-            )
-
-            self._set_value(
-                self.lbl_snapshot,
-                stats.oldest_snapshot,
-            )
-
-            self._set_value(
-                self.lbl_next,
-                stats.next_transaction,
-            )
-
-            # --------------------------------------------------
-            # SWEEP
-            # --------------------------------------------------
-
-            self._set_value(
-                self.lbl_sweep,
-                stats.sweep_interval,
-            )
-
-            # --------------------------------------------------
-            # FORCE WRITE
-            # --------------------------------------------------
-
-            if stats.forced_writes:
-
-                self._set_value(
-                    self.lbl_force_write,
-                    "ON",
-                    "#28a745",
-                )
-
-            else:
-
-                self._set_value(
-                    self.lbl_force_write,
-                    "OFF",
-                    "#dc3545",
-                )
-
-            # --------------------------------------------------
-            # NO RESERVE
-            # --------------------------------------------------
-
-            if stats.no_reserve:
-
-                self._set_value(
-                    self.lbl_no_reserve,
-                    "ON",
-                    "#28a745",
-                )
-
-            else:
-
-                self._set_value(
-                    self.lbl_no_reserve,
-                    "OFF",
-                    "#dc3545",
-                )
-
-            # --------------------------------------------------
-            # STATUS
-            # --------------------------------------------------
-
-            self._set_status(
-                "BAZA ZDROWA",
-                "#28a745",
+            diagnostic = (
+                self.controller.diagnostics()
             )
 
         except Exception as exc:
 
-            self._set_status(
-                "BŁĄD DIAGNOSTYKI",
-                "#dc3545",
+            self.diagnostic_message.setText(
+                f"Błąd diagnostyki: {exc}"
             )
 
-            error_text = str(
-                exc
+            self.set_diagnostic_style(
+                "error"
             )
 
-            self._set_value(
-                self.lbl_database,
-                error_text,
-                "#dc3545",
-            )
+            self.lbl_ods.setText("-")
 
-        finally:
+            return
 
-            self.refresh_button.setEnabled(
-                True
-            )
+        # ==================================================
+        # DIAGNOSTYKA
+        # ==================================================
+
+        self.diagnostic_message.setText(
+            diagnostic.message
+        )
+
+        self.set_diagnostic_style(
+            diagnostic.status
+        )
+
+        # ==================================================
+        # STATYSTYKI
+        # ==================================================
+
+        self.lbl_ods.setText(
+            stats.ods or "-"
+        )
+
+        self.lbl_page_size.setText(
+            str(stats.page_size)
+        )
+
+        self.lbl_buffers.setText(
+            str(stats.page_buffers)
+        )
+
+        self.lbl_sweep.setText(
+            str(stats.sweep_interval)
+        )
+
+        self.lbl_oldest.setText(
+            str(stats.oldest_transaction)
+        )
+
+        self.lbl_active.setText(
+            str(stats.oldest_active)
+        )
+
+        self.lbl_snapshot.setText(
+            str(stats.oldest_snapshot)
+        )
+
+        self.lbl_next.setText(
+            str(stats.next_transaction)
+        )
+
+        self.lbl_dialect.setText(
+            str(stats.database_dialect)
+        )
+
+        self.lbl_generation.setText(
+            str(stats.generation)
+        )
+
+        self.lbl_force_write.setText(
+            "ON"
+            if stats.forced_writes
+            else "OFF"
+        )
+
+        self.lbl_no_reserve.setText(
+            "ON"
+            if stats.no_reserve
+            else "OFF"
+        )
+
+        self.lbl_creation.setText(
+            stats.creation_date or "-"
+        )

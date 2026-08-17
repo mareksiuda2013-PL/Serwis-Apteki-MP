@@ -2,15 +2,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
-    QWidget,
-    QPushButton,
-    QVBoxLayout,
+    QFileDialog,
+    QGroupBox,
     QHBoxLayout,
     QLabel,
-    QFileDialog,
     QMessageBox,
+    QPushButton,
     QTextEdit,
+    QVBoxLayout,
+    QWidget,
 )
 
 from core.logger import logger
@@ -31,17 +33,68 @@ class OperationsTab(QWidget):
     znajdujące się w services.firebird.
     """
 
-    def __init__(self, controller):
+    def __init__(
+        self,
+        controller,
+    ) -> None:
 
         super().__init__()
 
         self.controller = controller
 
         # ==================================================
-        # LAYOUT GŁÓWNY
+        # GŁÓWNY LAYOUT
         # ==================================================
 
         layout = QVBoxLayout(self)
+
+        layout.setContentsMargins(
+            14,
+            14,
+            14,
+            14,
+        )
+
+        layout.setSpacing(
+            12
+        )
+
+        # ==================================================
+        # NAGŁÓWEK
+        # ==================================================
+
+        title = QLabel(
+            "Operacje administracyjne Firebird"
+        )
+
+        title.setStyleSheet(
+            """
+            QLabel {
+                font-size: 16px;
+                font-weight: bold;
+            }
+            """
+        )
+
+        layout.addWidget(
+            title
+        )
+
+        description = QLabel(
+            "Operacje wykonywane są na aktualnie skonfigurowanej bazie danych."
+        )
+
+        description.setStyleSheet(
+            """
+            QLabel {
+                color: #555555;
+            }
+            """
+        )
+
+        layout.addWidget(
+            description
+        )
 
         # ==================================================
         # STATUS
@@ -51,8 +104,24 @@ class OperationsTab(QWidget):
             "Gotowy."
         )
 
+        self.status.setAlignment(
+            Qt.AlignmentFlag.AlignCenter
+        )
+
         self.status.setMinimumHeight(
-            28
+            32
+        )
+
+        self.status.setStyleSheet(
+            """
+            QLabel {
+                background-color: #e9ecef;
+                color: #202020;
+                border-radius: 5px;
+                padding: 5px;
+                font-weight: bold;
+            }
+            """
         )
 
         layout.addWidget(
@@ -60,72 +129,203 @@ class OperationsTab(QWidget):
         )
 
         # ==================================================
-        # OPERACJE — WIERSZ 1
+        # OPERACJE BEZPIECZNE
         # ==================================================
 
-        row1 = QHBoxLayout()
+        safe_group = QGroupBox(
+            "Operacje diagnostyczne i konserwacyjne"
+        )
+
+        safe_layout = QHBoxLayout(
+            safe_group
+        )
+
+        safe_layout.setContentsMargins(
+            10,
+            14,
+            10,
+            10,
+        )
+
+        safe_layout.setSpacing(
+            10
+        )
+
+        # --------------------------------------------------
+        # BACKUP
+        # --------------------------------------------------
 
         self.backup_button = QPushButton(
             "Backup"
         )
 
+        self.backup_button.setMinimumHeight(
+            38
+        )
+
+        self.backup_button.setToolTip(
+            "Utwórz kopię zapasową bazy Firebird."
+        )
+
+        # --------------------------------------------------
+        # VALIDATE
+        # --------------------------------------------------
+
         self.validate_button = QPushButton(
             "Validate"
         )
+
+        self.validate_button.setMinimumHeight(
+            38
+        )
+
+        self.validate_button.setToolTip(
+            "Sprawdź poprawność struktury bazy danych."
+        )
+
+        # --------------------------------------------------
+        # SWEEP
+        # --------------------------------------------------
 
         self.sweep_button = QPushButton(
             "Sweep"
         )
 
-        row1.addWidget(
+        self.sweep_button.setMinimumHeight(
+            38
+        )
+
+        self.sweep_button.setToolTip(
+            "Wykonaj Sweep bazy danych."
+        )
+
+        safe_layout.addWidget(
             self.backup_button
         )
 
-        row1.addWidget(
+        safe_layout.addWidget(
             self.validate_button
         )
 
-        row1.addWidget(
+        safe_layout.addWidget(
             self.sweep_button
         )
 
-        layout.addLayout(
-            row1
+        layout.addWidget(
+            safe_group
         )
 
         # ==================================================
-        # OPERACJE — WIERSZ 2
+        # OPERACJE INGERUJĄCE
         # ==================================================
 
-        row2 = QHBoxLayout()
+        dangerous_group = QGroupBox(
+            "Operacje wymagające szczególnej ostrożności"
+        )
+
+        dangerous_layout = QHBoxLayout(
+            dangerous_group
+        )
+
+        dangerous_layout.setContentsMargins(
+            10,
+            14,
+            10,
+            10,
+        )
+
+        dangerous_layout.setSpacing(
+            10
+        )
+
+        # --------------------------------------------------
+        # RESTORE
+        # --------------------------------------------------
 
         self.restore_button = QPushButton(
             "Restore"
         )
 
+        self.restore_button.setMinimumHeight(
+            38
+        )
+
+        self.restore_button.setToolTip(
+            "Przywróć bazę z pliku FBK."
+        )
+
+        # --------------------------------------------------
+        # MEND
+        # --------------------------------------------------
+
         self.mend_button = QPushButton(
             "MEND"
         )
 
-        row2.addWidget(
+        self.mend_button.setMinimumHeight(
+            38
+        )
+
+        self.mend_button.setToolTip(
+            "Wykonaj operację naprawczą MEND."
+        )
+
+        dangerous_layout.addWidget(
             self.restore_button
         )
 
-        row2.addWidget(
+        dangerous_layout.addWidget(
             self.mend_button
         )
 
-        layout.addLayout(
-            row2
+        layout.addWidget(
+            dangerous_group
         )
 
         # ==================================================
         # LOG
         # ==================================================
 
-        layout.addWidget(
-            QLabel("Log operacji:")
+        log_header = QHBoxLayout()
+
+        log_label = QLabel(
+            "Log operacji"
         )
+
+        log_label.setStyleSheet(
+            """
+            QLabel {
+                font-size: 13px;
+                font-weight: bold;
+            }
+            """
+        )
+
+        log_header.addWidget(
+            log_label
+        )
+
+        log_header.addStretch()
+
+        self.clear_log_button = QPushButton(
+            "Wyczyść log"
+        )
+
+        self.clear_log_button.setFixedWidth(
+            110
+        )
+
+        log_header.addWidget(
+            self.clear_log_button
+        )
+
+        layout.addLayout(
+            log_header
+        )
+
+        # ==================================================
+        # PANEL LOGU
+        # ==================================================
 
         self.log_panel = QTextEdit()
 
@@ -137,27 +337,34 @@ class OperationsTab(QWidget):
             220
         )
 
+        self.log_panel.setPlaceholderText(
+            "Tutaj pojawi się wynik wykonanych operacji..."
+        )
+
+        self.log_panel.setStyleSheet(
+            """
+            QTextEdit {
+                border: 1px solid #cccccc;
+                border-radius: 5px;
+                background-color: #fafafa;
+                padding: 6px;
+                font-family: Consolas;
+                font-size: 10pt;
+            }
+            """
+        )
+
         layout.addWidget(
             self.log_panel
         )
 
         # ==================================================
-        # CZYSZCZENIE LOGU
+        # ROZPYCHACZ
         # ==================================================
 
-        self.clear_log_button = QPushButton(
-            "Wyczyść log"
+        layout.addStretch(
+            1
         )
-
-        self.clear_log_button.clicked.connect(
-            self.log_panel.clear
-        )
-
-        layout.addWidget(
-            self.clear_log_button
-        )
-
-        layout.addStretch()
 
         # ==================================================
         # SIGNALS
@@ -183,6 +390,10 @@ class OperationsTab(QWidget):
             self.mend
         )
 
+        self.clear_log_button.clicked.connect(
+            self.log_panel.clear
+        )
+
         # ==================================================
         # LOGGER
         # ==================================================
@@ -198,10 +409,51 @@ class OperationsTab(QWidget):
     def set_status(
         self,
         text: str,
+        color: str = "normal",
     ) -> None:
 
+        colors = {
+            "normal": (
+                "#e9ecef",
+                "#202020",
+            ),
+            "success": (
+                "#28a745",
+                "#ffffff",
+            ),
+            "warning": (
+                "#ffc107",
+                "#202020",
+            ),
+            "error": (
+                "#dc3545",
+                "#ffffff",
+            ),
+            "info": (
+                "#0d6efd",
+                "#ffffff",
+            ),
+        }
+
+        background, foreground = colors.get(
+            color,
+            colors["normal"],
+        )
+
         self.status.setText(
-            text
+            str(text)
+        )
+
+        self.status.setStyleSheet(
+            f"""
+            QLabel {{
+                background-color: {background};
+                color: {foreground};
+                border-radius: 5px;
+                padding: 5px;
+                font-weight: bold;
+            }}
+            """
         )
 
     # ======================================================
@@ -241,13 +493,6 @@ class OperationsTab(QWidget):
         self,
     ) -> None:
 
-        """
-        Odświeża informacje o aktualnej bazie.
-
-        Nie powoduje błędu, jeżeli odświeżenie
-        informacji nie powiedzie się po operacji.
-        """
-
         try:
 
             self.controller.info()
@@ -272,7 +517,8 @@ class OperationsTab(QWidget):
         )
 
         self.set_status(
-            text
+            text,
+            "info",
         )
 
         logger.info(
@@ -286,6 +532,7 @@ class OperationsTab(QWidget):
     def operation_finished(
         self,
         text: str,
+        color: str = "success",
     ) -> None:
 
         self.set_operations_enabled(
@@ -293,7 +540,8 @@ class OperationsTab(QWidget):
         )
 
         self.set_status(
-            text
+            text,
+            color,
         )
 
         logger.info(
@@ -328,10 +576,6 @@ class OperationsTab(QWidget):
                 ".fbk"
             )
 
-        # --------------------------------------------------
-        # POTWIERDZENIE
-        # --------------------------------------------------
-
         answer = QMessageBox.question(
             self,
             "Backup Firebird",
@@ -363,7 +607,8 @@ class OperationsTab(QWidget):
             if ok:
 
                 self.operation_finished(
-                    "Backup zakończony pomyślnie."
+                    "Backup zakończony pomyślnie.",
+                    "success",
                 )
 
                 QMessageBox.information(
@@ -378,7 +623,8 @@ class OperationsTab(QWidget):
             else:
 
                 self.operation_finished(
-                    "Backup zakończony błędem."
+                    "Backup zakończony błędem.",
+                    "error",
                 )
 
                 QMessageBox.critical(
@@ -394,7 +640,8 @@ class OperationsTab(QWidget):
             )
 
             self.set_status(
-                "Błąd backupu."
+                "Błąd backupu.",
+                "error",
             )
 
             logger.error(
@@ -442,7 +689,8 @@ class OperationsTab(QWidget):
             if result.success:
 
                 self.operation_finished(
-                    "Walidacja zakończona."
+                    "Walidacja zakończona.",
+                    "success",
                 )
 
                 QMessageBox.information(
@@ -455,7 +703,8 @@ class OperationsTab(QWidget):
             else:
 
                 self.operation_finished(
-                    "Walidacja wykazała problem."
+                    "Walidacja wykazała problem.",
+                    "warning",
                 )
 
                 QMessageBox.warning(
@@ -473,7 +722,8 @@ class OperationsTab(QWidget):
             )
 
             self.set_status(
-                "Błąd walidacji."
+                "Błąd walidacji.",
+                "error",
             )
 
             logger.error(
@@ -521,7 +771,8 @@ class OperationsTab(QWidget):
             if result.success:
 
                 self.operation_finished(
-                    "Sweep zakończony pomyślnie."
+                    "Sweep zakończony pomyślnie.",
+                    "success",
                 )
 
                 QMessageBox.information(
@@ -534,7 +785,8 @@ class OperationsTab(QWidget):
             else:
 
                 self.operation_finished(
-                    "Sweep zakończony błędem."
+                    "Sweep zakończony błędem.",
+                    "error",
                 )
 
                 QMessageBox.warning(
@@ -552,7 +804,8 @@ class OperationsTab(QWidget):
             )
 
             self.set_status(
-                "Błąd Sweep."
+                "Błąd Sweep.",
+                "error",
             )
 
             logger.error(
@@ -595,10 +848,6 @@ class OperationsTab(QWidget):
             Path(database_file)
         )
 
-        # --------------------------------------------------
-        # OSTRZEŻENIE
-        # --------------------------------------------------
-
         answer = QMessageBox.warning(
             self,
             "UWAGA — RESTORE",
@@ -634,7 +883,8 @@ class OperationsTab(QWidget):
             if ok:
 
                 self.operation_finished(
-                    "Restore zakończony pomyślnie."
+                    "Restore zakończony pomyślnie.",
+                    "success",
                 )
 
                 QMessageBox.information(
@@ -649,7 +899,8 @@ class OperationsTab(QWidget):
             else:
 
                 self.operation_finished(
-                    "Restore zakończony błędem."
+                    "Restore zakończony błędem.",
+                    "error",
                 )
 
                 QMessageBox.critical(
@@ -665,7 +916,8 @@ class OperationsTab(QWidget):
             )
 
             self.set_status(
-                "Błąd Restore."
+                "Błąd Restore.",
+                "error",
             )
 
             logger.error(
@@ -719,7 +971,8 @@ class OperationsTab(QWidget):
             if result.success:
 
                 self.operation_finished(
-                    "MEND zakończony pomyślnie."
+                    "MEND zakończony pomyślnie.",
+                    "success",
                 )
 
                 QMessageBox.information(
@@ -732,7 +985,8 @@ class OperationsTab(QWidget):
             else:
 
                 self.operation_finished(
-                    "MEND zakończony błędem."
+                    "MEND zakończony błędem.",
+                    "error",
                 )
 
                 QMessageBox.critical(
@@ -750,7 +1004,8 @@ class OperationsTab(QWidget):
             )
 
             self.set_status(
-                "Błąd MEND."
+                "Błąd MEND.",
+                "error",
             )
 
             logger.error(
@@ -767,7 +1022,10 @@ class OperationsTab(QWidget):
     # CLEANUP
     # ======================================================
 
-    def closeEvent(self, event) -> None:
+    def closeEvent(
+        self,
+        event,
+    ) -> None:
 
         try:
 
