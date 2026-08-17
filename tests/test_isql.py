@@ -4,28 +4,29 @@ import sys
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from config import Config
 from services.firebird.client import FirebirdClient
 from services.firebird.installation_service import InstallationService
 
-cfg = Config()
 
-installation = InstallationService().first_installation()
+def test_fetch_one():
+    installation = InstallationService().first_installation()
 
-client = FirebirdClient(installation)
+    client = FirebirdClient(installation)
 
-print(client.fetch_one(
-    cfg.database,
-    cfg.user,
-    cfg.password,
-    "SELECT CURRENT_USER FROM RDB$DATABASE;"
-))
+    result = client.fetch_one(
+        "SELECT CURRENT_USER FROM RDB$DATABASE;"
+    )
 
-print()
+    assert result is not None
 
-print(client.fetch_all(
-    cfg.database,
-    cfg.user,
-    cfg.password,
-    "SELECT FIRST 5 RDB$RELATION_NAME FROM RDB$RELATIONS;"
-))
+
+def test_fetch_all():
+    installation = InstallationService().first_installation()
+
+    client = FirebirdClient(installation)
+
+    result = client.fetch_all(
+        "SELECT FIRST 5 RDB$RELATION_NAME FROM RDB$RELATIONS;"
+    )
+
+    assert result is not None

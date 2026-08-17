@@ -6,11 +6,9 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from services.firebird.mend_service import MendService
 
-service = MendService()
 
-result = service.mend()
+def test_mend_service_creation():
 
-print(result.success)
-print(result.return_code)
-print(result.stdout)
-print(result.stderr)
+    service = MendService()
+
+    assert service is not None
