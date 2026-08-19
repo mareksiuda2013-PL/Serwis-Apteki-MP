@@ -4,7 +4,7 @@ from pathlib import Path
 
 from config import Config
 from core.process_runner import ProcessRunner
-from services.firebird.installation_service import (
+from services.firebird.discovery.installation_service import (
     InstallationService,
 )
 

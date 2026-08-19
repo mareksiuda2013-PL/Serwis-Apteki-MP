@@ -7,7 +7,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 try:
 
-    from services.firebird.installation_service import InstallationService
+    from services.firebird.discovery.installation_service import InstallationService
 
     print("Import OK")
 

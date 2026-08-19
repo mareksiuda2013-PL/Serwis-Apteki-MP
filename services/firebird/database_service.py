@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from services.firebird.client import FirebirdClient
-from services.firebird.installation_service import InstallationService
+from services.firebird.discovery.installation_service import InstallationService
 
 
 class DatabaseService:

@@ -5,7 +5,7 @@ from pathlib import Path
 from config import Config
 from core.process_runner import ProcessRunner
 
-from .installation_service import InstallationService
+from .discovery.installation_service import InstallationService
 
 
 class BaseFirebirdService:

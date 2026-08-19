@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from config import Config
+from core.logger import logger
 from models import FirebirdInfo
 
 from .database_service import DatabaseService
-from .installation_service import InstallationService
+from .discovery.installation_service import InstallationService
 from .service_service import ServiceService
+from .statistics_service import StatisticsService
 
 
 class FirebirdService:
@@ -20,6 +22,7 @@ class FirebirdService:
 
         self.installation = InstallationService()
         self.database = DatabaseService()
+        self.statistics = StatisticsService()
         self.service = ServiceService()
 
     # ==================================================
@@ -48,6 +51,8 @@ class FirebirdService:
         info.install_path = fb.install_path
         info.bin_path = fb.install_path
 
+        info.version = fb.version or "-"
+
         info.gbak_path = fb.gbak
         info.gfix_path = fb.gfix
         info.isql_path = fb.isql
@@ -75,10 +80,6 @@ class FirebirdService:
 
         info.database_path = database_path
 
-        # --------------------------------------------------
-        # PLIK BAZY
-        # --------------------------------------------------
-
         info.database_exists = (
             self.database.exists(database_path)
         )
@@ -87,24 +88,73 @@ class FirebirdService:
             self.database.size_gb(database_path)
         )
 
-        # --------------------------------------------------
-        # INFORMACJE Z FIREBIRD
-        # --------------------------------------------------
+        # ==================================================
+        # STATYSTYKI GSTAT
+        # ==================================================
 
-        try:
+        if info.database_exists:
 
-            info.version = self.database.version()
-            info.ods = self.database.ods()
-            info.page_size = self.database.page_size()
-            info.sql_dialect = self.database.sql_dialect()
-            info.tables = self.database.tables()
+            try:
 
-        except Exception as exc:
+                stats = (
+                    StatisticsService(
+                        database=database_path
+                    ).statistics()
+                )
 
-            print(
-                "FirebirdService: "
-                f"nie udało się pobrać informacji z bazy: {exc}"
-            )
+                info.statistics = stats
+
+                # ------------------------------------------
+                # Dane podstawowe
+                # ------------------------------------------
+
+                info.ods = stats.ods
+                info.page_size = stats.page_size
+
+                info.sql_dialect = (
+                    stats.database_dialect
+                )
+
+                # ------------------------------------------
+                # LOG GSTAT
+                # ------------------------------------------
+
+                logger.info(
+                    f"GSTAT | "
+                    f"ODS={stats.ods} | "
+                    f"page_size={stats.page_size} | "
+                    f"buffers={stats.page_buffers} | "
+                    f"sweep={stats.sweep_interval} | "
+                    f"forced_writes={stats.forced_writes}"
+                )
+
+            except Exception as exc:
+
+                logger.error(
+                    f"GSTAT | nie udało się pobrać "
+                    f"statystyk: {exc}"
+                )
+
+        # ==================================================
+        # INFORMACJE Z DATABASE SERVICE
+        # ==================================================
+
+        if info.database_exists:
+
+            try:
+
+                info.tables = (
+                    self.database.tables()
+                    or 0
+                )
+
+            except Exception as exc:
+
+                logger.error(
+                    f"FirebirdService | "
+                    f"nie udało się pobrać liczby tabel: "
+                    f"{exc}"
+                )
 
         # ==================================================
         # USŁUGA FIREBIRD
@@ -119,26 +169,24 @@ class FirebirdService:
             info.service_name = service_name
 
             info.service_status = (
-                self.service.status(service_name)
+                self.service.status(
+                    service_name
+                )
             )
 
         # ==================================================
-        # DEBUG
+        # LOG INFORMACJI
         # ==================================================
 
-        print(
-            "FirebirdService DATABASE:",
-            info.database_path,
-        )
-
-        print(
-            "FirebirdService EXISTS:",
-            info.database_exists,
-        )
-
-        print(
-            "FirebirdService SIZE:",
-            info.database_size_gb,
+        logger.info(
+            f"Firebird INFO | "
+            f"baza={info.database_path} | "
+            f"istnieje={info.database_exists} | "
+            f"rozmiar={info.database_size_gb:.2f} GB | "
+            f"ODS={info.ods} | "
+            f"page_size={info.page_size} | "
+            f"dialect={info.sql_dialect} | "
+            f"tabele={info.tables}"
         )
 
         return info

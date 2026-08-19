@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from config import Config
 from core.process_runner import ProcessRunner
-from services.firebird.installation_service import FirebirdInstallation
+from services.firebird.discovery.installation_service import FirebirdInstallation
 
 
 class FirebirdClient:
@@ -42,9 +42,11 @@ class FirebirdClient:
                 "-password",
                 self.cfg.password,
                 self.cfg.database,
-            ],
-            input_text=script,
-        )
+        ],
+        input_text=script,
+        operation="ISQL",
+        log_operation=False,
+    )
 
         if not result.success:
             return False, result.stderr

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
 
 from PySide6.QtWidgets import (
@@ -25,7 +26,6 @@ class InformationTab(QWidget):
         super().__init__()
 
         self.controller = controller
-
         self.selected_database: str | None = None
 
         # ==================================================
@@ -61,43 +61,6 @@ class InformationTab(QWidget):
         self.lbl_page_size = QLabel("-")
         self.lbl_tables = QLabel("-")
 
-        # ==================================================
-        # USŁUGA
-        # ==================================================
-
-        self.lbl_service = QLabel("-")
-        self.lbl_status = QLabel("-")
-
-        # ==================================================
-        # INSTALACJA
-        # ==================================================
-
-        self.lbl_install = QLabel("-")
-        self.lbl_bin = QLabel("-")
-        self.lbl_port = QLabel("-")
-
-        # ==================================================
-        # NARZĘDZIA
-        # ==================================================
-
-        self.lbl_gbak = QLabel("-")
-        self.lbl_gfix = QLabel("-")
-        self.lbl_isql = QLabel("-")
-        self.lbl_fbclient = QLabel("-")
-
-        # ==================================================
-        # BAZA
-        # ==================================================
-
-        self.lbl_database = QLabel("-")
-        self.lbl_db_file = QLabel("-")
-        self.lbl_db_size = QLabel("-")
-        self.lbl_db_date = QLabel("-")
-
-        # ==================================================
-        # FIREBIRD
-        # ==================================================
-
         self.form.addRow(
             "Zainstalowany:",
             self.lbl_installed,
@@ -129,8 +92,76 @@ class InformationTab(QWidget):
         )
 
         # ==================================================
+        # GSTAT
+        # ==================================================
+
+        self.lbl_buffers = QLabel("-")
+        self.lbl_sweep = QLabel("-")
+        self.lbl_forced_writes = QLabel("-")
+        self.lbl_no_reserve = QLabel("-")
+        self.lbl_oldest_transaction = QLabel("-")
+        self.lbl_oldest_active = QLabel("-")
+        self.lbl_oldest_snapshot = QLabel("-")
+        self.lbl_next_transaction = QLabel("-")
+        self.lbl_generation = QLabel("-")
+        self.lbl_creation_date = QLabel("-")
+
+        self.form.addRow(
+            "Page Buffers:",
+            self.lbl_buffers,
+        )
+
+        self.form.addRow(
+            "Sweep Interval:",
+            self.lbl_sweep,
+        )
+
+        self.form.addRow(
+            "Forced Writes:",
+            self.lbl_forced_writes,
+        )
+
+        self.form.addRow(
+            "No Reserve:",
+            self.lbl_no_reserve,
+        )
+
+        self.form.addRow(
+            "Oldest Transaction:",
+            self.lbl_oldest_transaction,
+        )
+
+        self.form.addRow(
+            "Oldest Active:",
+            self.lbl_oldest_active,
+        )
+
+        self.form.addRow(
+            "Oldest Snapshot:",
+            self.lbl_oldest_snapshot,
+        )
+
+        self.form.addRow(
+            "Next Transaction:",
+            self.lbl_next_transaction,
+        )
+
+        self.form.addRow(
+            "Generation:",
+            self.lbl_generation,
+        )
+
+        self.form.addRow(
+            "Creation Date:",
+            self.lbl_creation_date,
+        )
+
+        # ==================================================
         # USŁUGA
         # ==================================================
+
+        self.lbl_service = QLabel("-")
+        self.lbl_status = QLabel("-")
 
         self.form.addRow(
             "Usługa:",
@@ -145,6 +176,10 @@ class InformationTab(QWidget):
         # ==================================================
         # INSTALACJA
         # ==================================================
+
+        self.lbl_install = QLabel("-")
+        self.lbl_bin = QLabel("-")
+        self.lbl_port = QLabel("-")
 
         self.form.addRow(
             "Instalacja:",
@@ -164,6 +199,11 @@ class InformationTab(QWidget):
         # ==================================================
         # NARZĘDZIA
         # ==================================================
+
+        self.lbl_gbak = QLabel("-")
+        self.lbl_gfix = QLabel("-")
+        self.lbl_isql = QLabel("-")
+        self.lbl_fbclient = QLabel("-")
 
         self.form.addRow(
             "gbak.exe:",
@@ -188,6 +228,11 @@ class InformationTab(QWidget):
         # ==================================================
         # BAZA
         # ==================================================
+
+        self.lbl_database = QLabel("-")
+        self.lbl_db_file = QLabel("-")
+        self.lbl_db_size = QLabel("-")
+        self.lbl_db_date = QLabel("-")
 
         self.form.addRow(
             "Baza:",
@@ -316,6 +361,71 @@ class InformationTab(QWidget):
         )
 
         # ==================================================
+        # GSTAT
+        # ==================================================
+
+        stats = info.statistics
+
+        if stats is not None:
+
+            self.lbl_buffers.setText(
+                str(stats.page_buffers)
+            )
+
+            self.lbl_sweep.setText(
+                str(stats.sweep_interval)
+            )
+
+            self.lbl_forced_writes.setText(
+                "TAK"
+                if stats.forced_writes
+                else "NIE"
+            )
+
+            self.lbl_no_reserve.setText(
+                "TAK"
+                if stats.no_reserve
+                else "NIE"
+            )
+
+            self.lbl_oldest_transaction.setText(
+                str(stats.oldest_transaction)
+            )
+
+            self.lbl_oldest_active.setText(
+                str(stats.oldest_active)
+            )
+
+            self.lbl_oldest_snapshot.setText(
+                str(stats.oldest_snapshot)
+            )
+
+            self.lbl_next_transaction.setText(
+                str(stats.next_transaction)
+            )
+
+            self.lbl_generation.setText(
+                str(stats.generation)
+            )
+
+            self.lbl_creation_date.setText(
+                stats.creation_date or "-"
+            )
+
+        else:
+
+            self.lbl_buffers.setText("-")
+            self.lbl_sweep.setText("-")
+            self.lbl_forced_writes.setText("-")
+            self.lbl_no_reserve.setText("-")
+            self.lbl_oldest_transaction.setText("-")
+            self.lbl_oldest_active.setText("-")
+            self.lbl_oldest_snapshot.setText("-")
+            self.lbl_next_transaction.setText("-")
+            self.lbl_generation.setText("-")
+            self.lbl_creation_date.setText("-")
+
+        # ==================================================
         # USŁUGA
         # ==================================================
 
@@ -401,7 +511,7 @@ class InformationTab(QWidget):
             )
 
         # ==================================================
-        # PLIK
+        # PLIK BAZY
         # ==================================================
 
         if info.database_exists:
@@ -419,8 +529,6 @@ class InformationTab(QWidget):
                 modified = Path(
                     database_path
                 ).stat().st_mtime
-
-                from datetime import datetime
 
                 date = datetime.fromtimestamp(
                     modified

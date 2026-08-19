@@ -8,6 +8,12 @@ from PySide6.QtCore import (
 
 
 class OperationWorker(QObject):
+    """
+    Wykonuje pojedynczą operację w osobnym wątku.
+
+    Worker nie dotyka GUI.
+    Zwraca tylko wynik przez sygnał.
+    """
 
     finished = Signal(object)
     error = Signal(str)
@@ -15,14 +21,18 @@ class OperationWorker(QObject):
     def __init__(
         self,
         function,
-    ):
+    ) -> None:
 
         super().__init__()
 
         self.function = function
 
+    # ==================================================
+    # RUN
+    # ==================================================
+
     @Slot()
-    def run(self):
+    def run(self) -> None:
 
         try:
 

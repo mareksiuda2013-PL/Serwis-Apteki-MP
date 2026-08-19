@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import (
+    Qt,
+    QThread,
+    Slot,
+)
+
 from PySide6.QtWidgets import (
     QFileDialog,
     QGroupBox,
@@ -16,6 +21,11 @@ from PySide6.QtWidgets import (
 )
 
 from core.logger import logger
+from core.operation_worker import OperationWorker
+
+from services.firebird.operation_service import (
+    FirebirdOperationService,
+)
 
 
 class OperationsTab(QWidget):
@@ -23,14 +33,15 @@ class OperationsTab(QWidget):
     Panel operacji administracyjnych Firebird.
 
     Obsługiwane operacje:
+
         - Backup
         - Validate
         - Sweep
         - Restore
         - MEND
 
-    Operacje są wykonywane przez dedykowane serwisy
-    znajdujące się w services.firebird.
+    Operacje wykonywane są w osobnym wątku,
+    aby nie blokować interfejsu aplikacji.
     """
 
     def __init__(
@@ -41,6 +52,13 @@ class OperationsTab(QWidget):
         super().__init__()
 
         self.controller = controller
+
+        # ==================================================
+        # THREAD / WORKER
+        # ==================================================
+
+        self._thread = None
+        self._worker = None
 
         # ==================================================
         # GŁÓWNY LAYOUT
@@ -283,7 +301,7 @@ class OperationsTab(QWidget):
         )
 
         # ==================================================
-        # LOG
+        # LOG HEADER
         # ==================================================
 
         log_header = QHBoxLayout()
@@ -324,7 +342,7 @@ class OperationsTab(QWidget):
         )
 
         # ==================================================
-        # PANEL LOGU
+        # LOG PANEL
         # ==================================================
 
         self.log_panel = QTextEdit()
@@ -357,10 +375,6 @@ class OperationsTab(QWidget):
         layout.addWidget(
             self.log_panel
         )
-
-        # ==================================================
-        # ROZPYCHACZ
-        # ==================================================
 
         layout.addStretch(
             1
@@ -401,6 +415,214 @@ class OperationsTab(QWidget):
         logger.add_callback(
             self.log_panel.append
         )
+
+    # ======================================================
+    # ASYNCHRONICZNA OPERACJA
+    # ======================================================
+
+    def run_async_operation(
+        self,
+        operation,
+        name: str,
+        success_text: str,
+        error_text: str,
+        dialog_title: str,
+        warning_on_failure: bool = False,
+    ) -> None:
+
+        # --------------------------------------------------
+        # CZY INNA OPERACJA DZIAŁA?
+        # --------------------------------------------------
+
+        if self._thread is not None:
+
+            if self._thread.isRunning():
+                return
+
+        # --------------------------------------------------
+        # START
+        # --------------------------------------------------
+
+        self.operation_started(
+            f"Trwa operacja {name}..."
+        )
+
+        operation_service = (
+            FirebirdOperationService()
+        )
+
+        # --------------------------------------------------
+        # WORKER
+        # --------------------------------------------------
+
+        worker = OperationWorker(
+            lambda: operation_service.execute(
+                operation,
+                name,
+            )
+        )
+
+        # --------------------------------------------------
+        # THREAD
+        # --------------------------------------------------
+
+        thread = QThread()
+
+        worker.moveToThread(
+            thread
+        )
+
+        self._worker = worker
+        self._thread = thread
+
+        # ==================================================
+        # SIGNALS THREAD
+        # ==================================================
+
+        thread.started.connect(
+            worker.run
+        )
+
+        # ==================================================
+        # WAŻNE:
+        # wynik trafia do GUI THREAD
+        # ==================================================
+
+        worker.finished.connect(
+            self._operation_result,
+            Qt.ConnectionType.QueuedConnection,
+        )
+
+        worker.error.connect(
+            self._operation_error,
+            Qt.ConnectionType.QueuedConnection,
+        )
+
+        # ==================================================
+        # KONIEC THREADU
+        # ==================================================
+
+        worker.finished.connect(
+            thread.quit
+        )
+
+        worker.error.connect(
+            thread.quit
+        )
+
+        thread.finished.connect(
+            worker.deleteLater
+        )
+
+        thread.finished.connect(
+            thread.deleteLater
+        )
+
+        thread.finished.connect(
+            self._thread_finished
+        )
+
+        # --------------------------------------------------
+        # START
+        # --------------------------------------------------
+
+        thread.start()
+
+    # ======================================================
+    # WYNIK OPERACJI
+    # ======================================================
+
+    @Slot(object)
+    def _operation_result(
+        self,
+        result,
+    ) -> None:
+
+        if result.success:
+
+            self.operation_finished(
+                self._success_text,
+                "success",
+            )
+
+            QMessageBox.information(
+                self,
+                self._dialog_title,
+                result.message
+                or self._success_text,
+            )
+
+        else:
+
+            color = (
+                "warning"
+                if self._warning_on_failure
+                else "error"
+            )
+
+            self.operation_finished(
+                self._error_text,
+                color,
+            )
+
+            if self._warning_on_failure:
+
+                QMessageBox.warning(
+                    self,
+                    self._dialog_title,
+                    result.message
+                    or self._error_text,
+                )
+
+            else:
+
+                QMessageBox.critical(
+                    self,
+                    self._dialog_title,
+                    result.message
+                    or self._error_text,
+                )
+
+    # ======================================================
+    # BŁĄD WORKERA
+    # ======================================================
+
+    @Slot(str)
+    def _operation_error(
+        self,
+        message: str,
+    ) -> None:
+
+        self.set_operations_enabled(
+            True
+        )
+
+        self.set_status(
+            "Błąd operacji.",
+            "error",
+        )
+
+        logger.error(
+            f"OPERATION ERROR: {message}"
+        )
+
+        QMessageBox.critical(
+            self,
+            "Błąd operacji",
+            message,
+        )
+
+    # ======================================================
+    # KONIEC THREADU
+    # ======================================================
+
+    @Slot()
+    def _thread_finished(
+        self,
+    ) -> None:
+
+        self._worker = None
+        self._thread = None
 
     # ======================================================
     # STATUS
@@ -554,7 +776,9 @@ class OperationsTab(QWidget):
     # BACKUP
     # ======================================================
 
-    def backup(self) -> None:
+    def backup(
+        self,
+    ) -> None:
 
         file_name, _ = QFileDialog.getSaveFileName(
             self,
@@ -594,71 +818,23 @@ class OperationsTab(QWidget):
             BackupService,
         )
 
-        self.operation_started(
-            "Trwa wykonywanie backupu..."
-        )
-
-        try:
-
-            ok, log = BackupService().backup(
+        self._start_operation(
+            operation=lambda: BackupService().backup(
                 destination
-            )
-
-            if ok:
-
-                self.operation_finished(
-                    "Backup zakończony pomyślnie.",
-                    "success",
-                )
-
-                QMessageBox.information(
-                    self,
-                    "Backup",
-                    (
-                        "Backup zakończony pomyślnie.\n\n"
-                        f"Plik:\n{destination}"
-                    ),
-                )
-
-            else:
-
-                self.operation_finished(
-                    "Backup zakończony błędem.",
-                    "error",
-                )
-
-                QMessageBox.critical(
-                    self,
-                    "Backup",
-                    log or "Backup nie powiódł się.",
-                )
-
-        except Exception as exc:
-
-            self.set_operations_enabled(
-                True
-            )
-
-            self.set_status(
-                "Błąd backupu.",
-                "error",
-            )
-
-            logger.error(
-                f"BACKUP ERROR: {exc}"
-            )
-
-            QMessageBox.critical(
-                self,
-                "Backup",
-                str(exc),
-            )
+            ),
+            name="BACKUP",
+            success_text="Backup zakończony pomyślnie.",
+            error_text="Backup zakończony błędem.",
+            dialog_title="Backup",
+        )
 
     # ======================================================
     # VALIDATE
     # ======================================================
 
-    def validate(self) -> None:
+    def validate(
+        self,
+    ) -> None:
 
         answer = QMessageBox.question(
             self,
@@ -678,69 +854,22 @@ class OperationsTab(QWidget):
             ValidateService,
         )
 
-        self.operation_started(
-            "Trwa walidacja bazy..."
+        self._start_operation(
+            operation=lambda: ValidateService().validate(),
+            name="VALIDATE",
+            success_text="Walidacja zakończona.",
+            error_text="Walidacja wykazała problem.",
+            dialog_title="Validate",
+            warning_on_failure=True,
         )
-
-        try:
-
-            result = ValidateService().validate()
-
-            if result.success:
-
-                self.operation_finished(
-                    "Walidacja zakończona.",
-                    "success",
-                )
-
-                QMessageBox.information(
-                    self,
-                    "Validate",
-                    result.stdout
-                    or "Walidacja zakończona pomyślnie.",
-                )
-
-            else:
-
-                self.operation_finished(
-                    "Walidacja wykazała problem.",
-                    "warning",
-                )
-
-                QMessageBox.warning(
-                    self,
-                    "Validate",
-                    result.stderr
-                    or result.stdout
-                    or "Walidacja wykazała problem.",
-                )
-
-        except Exception as exc:
-
-            self.set_operations_enabled(
-                True
-            )
-
-            self.set_status(
-                "Błąd walidacji.",
-                "error",
-            )
-
-            logger.error(
-                f"VALIDATE ERROR: {exc}"
-            )
-
-            QMessageBox.critical(
-                self,
-                "Validate",
-                str(exc),
-            )
 
     # ======================================================
     # SWEEP
     # ======================================================
 
-    def sweep(self) -> None:
+    def sweep(
+        self,
+    ) -> None:
 
         answer = QMessageBox.question(
             self,
@@ -760,69 +889,21 @@ class OperationsTab(QWidget):
             SweepService,
         )
 
-        self.operation_started(
-            "Trwa Sweep..."
+        self._start_operation(
+            operation=lambda: SweepService().sweep(),
+            name="SWEEP",
+            success_text="Sweep zakończony pomyślnie.",
+            error_text="Sweep zakończony błędem.",
+            dialog_title="Sweep",
         )
-
-        try:
-
-            result = SweepService().sweep()
-
-            if result.success:
-
-                self.operation_finished(
-                    "Sweep zakończony pomyślnie.",
-                    "success",
-                )
-
-                QMessageBox.information(
-                    self,
-                    "Sweep",
-                    result.stdout
-                    or "Sweep zakończony pomyślnie.",
-                )
-
-            else:
-
-                self.operation_finished(
-                    "Sweep zakończony błędem.",
-                    "error",
-                )
-
-                QMessageBox.warning(
-                    self,
-                    "Sweep",
-                    result.stderr
-                    or result.stdout
-                    or "Sweep nie powiódł się.",
-                )
-
-        except Exception as exc:
-
-            self.set_operations_enabled(
-                True
-            )
-
-            self.set_status(
-                "Błąd Sweep.",
-                "error",
-            )
-
-            logger.error(
-                f"SWEEP ERROR: {exc}"
-            )
-
-            QMessageBox.critical(
-                self,
-                "Sweep",
-                str(exc),
-            )
 
     # ======================================================
     # RESTORE
     # ======================================================
 
-    def restore(self) -> None:
+    def restore(
+        self,
+    ) -> None:
 
         backup_file, _ = QFileDialog.getOpenFileName(
             self,
@@ -868,77 +949,43 @@ class OperationsTab(QWidget):
             RestoreService,
         )
 
-        self.operation_started(
-            "Trwa przywracanie bazy..."
-        )
-
-        try:
-
-            ok, log = RestoreService().restore(
+        self._start_operation(
+            operation=lambda: RestoreService().restore(
                 backup_file,
                 database_file,
                 replace=True,
-            )
-
-            if ok:
-
-                self.operation_finished(
-                    "Restore zakończony pomyślnie.",
-                    "success",
-                )
-
-                QMessageBox.information(
-                    self,
-                    "Restore",
-                    (
-                        "Restore zakończony pomyślnie.\n\n"
-                        f"Baza:\n{database_file}"
-                    ),
-                )
-
-            else:
-
-                self.operation_finished(
-                    "Restore zakończony błędem.",
-                    "error",
-                )
-
-                QMessageBox.critical(
-                    self,
-                    "Restore",
-                    log or "Restore nie powiódł się.",
-                )
-
-        except Exception as exc:
-
-            self.set_operations_enabled(
-                True
-            )
-
-            self.set_status(
-                "Błąd Restore.",
-                "error",
-            )
-
-            logger.error(
-                f"RESTORE ERROR: {exc}"
-            )
-
-            QMessageBox.critical(
-                self,
-                "Restore",
-                str(exc),
-            )
+            ),
+            name="RESTORE",
+            success_text="Restore zakończony pomyślnie.",
+            error_text="Restore zakończony błędem.",
+            dialog_title="Restore",
+        )
 
     # ======================================================
     # MEND
     # ======================================================
 
-    def mend(self) -> None:
+    def mend(
+        self,
+    ) -> None:
 
-        answer = QMessageBox.warning(
-            self,
-            "UWAGA — MEND",
+        # --------------------------------------------------
+        # OKNO OSTRZEŻENIA
+        # --------------------------------------------------
+
+        message_box = QMessageBox(
+            self
+        )
+
+        message_box.setIcon(
+            QMessageBox.Warning
+        )
+
+        message_box.setWindowTitle(
+            "UWAGA — MEND"
+        )
+
+        message_box.setText(
             (
                 "OPERACJA NAPRAWCZA\n\n"
                 "MEND jest operacją ingerującą w strukturę "
@@ -948,10 +995,36 @@ class OperationsTab(QWidget):
                 "Zalecane jest również wykonanie Validate "
                 "przed MEND.\n\n"
                 "Czy na pewno chcesz kontynuować?"
-            ),
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
+            )
         )
+
+        message_box.setStandardButtons(
+            QMessageBox.Yes | QMessageBox.No
+        )
+
+        message_box.setDefaultButton(
+            QMessageBox.No
+        )
+
+        yes_button = message_box.button(
+            QMessageBox.Yes
+        )
+
+        no_button = message_box.button(
+            QMessageBox.No
+        )
+
+        if yes_button:
+            yes_button.setText(
+                "Tak"
+            )
+
+        if no_button:
+            no_button.setText(
+                "Nie"
+            )
+
+        answer = message_box.exec()
 
         if answer != QMessageBox.Yes:
             return
@@ -960,48 +1033,42 @@ class OperationsTab(QWidget):
             MendService,
         )
 
-        from services.firebird.operation_service import (
-            FirebirdOperationService,
+        self._start_operation(
+            operation=lambda: MendService().mend(),
+            name="MEND",
+            success_text="MEND zakończony pomyślnie.",
+            error_text="MEND zakończony błędem.",
+            dialog_title="MEND",
         )
 
-        self.operation_started(
-            "Trwa operacja MEND..."
+    # ======================================================
+    # START OPERACJI
+    # ======================================================
+
+    def _start_operation(
+        self,
+        operation,
+        name: str,
+        success_text: str,
+        error_text: str,
+        dialog_title: str,
+        warning_on_failure: bool = False,
+    ) -> None:
+
+        # Zapamiętujemy informacje o operacji.
+        self._success_text = success_text
+        self._error_text = error_text
+        self._dialog_title = dialog_title
+        self._warning_on_failure = warning_on_failure
+
+        self.run_async_operation(
+            operation=operation,
+            name=name,
+            success_text=success_text,
+            error_text=error_text,
+            dialog_title=dialog_title,
+            warning_on_failure=warning_on_failure,
         )
-
-        operation_service = FirebirdOperationService()
-
-        result = operation_service.execute(
-            lambda: MendService().mend(),
-            "MEND",
-        )
-
-        if result.success:
-
-            self.operation_finished(
-                "MEND zakończony pomyślnie.",
-                "success",
-            )
-
-            QMessageBox.information(
-                self,
-                "MEND",
-                result.message
-                or "MEND zakończony pomyślnie.",
-            )
-
-        else:
-
-            self.operation_finished(
-                "MEND zakończony błędem.",
-                "error",
-            )
-
-            QMessageBox.critical(
-                self,
-                "MEND",
-                result.message
-                or "MEND nie powiódł się.",
-            )
 
     # ======================================================
     # CLEANUP
@@ -1021,5 +1088,13 @@ class OperationsTab(QWidget):
         except Exception:
 
             pass
+
+        if self._thread is not None:
+
+            if self._thread.isRunning():
+
+                self._thread.quit()
+
+                self._thread.wait()
 
         event.accept()

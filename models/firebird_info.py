@@ -3,13 +3,21 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from .database_statistics import DatabaseStatistics
+
 
 @dataclass(slots=True)
 class FirebirdInfo:
     """
     Informacje o instalacji Firebird
     oraz skonfigurowanej bazie danych.
+    
     """
+    # ==================================================
+    # STATYSTYKI BAZY
+    # ==================================================
+
+    statistics: DatabaseStatistics | None = None
 
     # ==================================================
     # FIREBIRD

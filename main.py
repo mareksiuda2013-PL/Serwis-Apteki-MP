@@ -164,6 +164,36 @@ def main() -> None:
         QFormLayout {
             color: #202020;
         }
+
+        /* ==================================================
+           OKNA DIALOGOWE
+           ================================================== */
+
+        QMessageBox {
+            background-color: #eeeeee;
+            color: #202020;
+        }
+
+        QMessageBox QLabel {
+            color: #202020;
+            background-color: transparent;
+        }
+
+        QMessageBox QPushButton {
+            color: #202020;
+            background-color: #ffffff;
+            border: 1px solid #cccccc;
+            border-radius: 5px;
+            padding: 6px 18px;
+        }
+
+        QMessageBox QPushButton:hover {
+            background-color: #f0f0f0;
+        }
+
+        QMessageBox QPushButton:pressed {
+            background-color: #e0e0e0;
+        }
         """
     )
 

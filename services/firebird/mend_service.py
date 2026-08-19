@@ -5,6 +5,7 @@ from pathlib import Path
 from config import Config
 from core.process_runner import ProcessRunner
 
+from .discovery.installation_service import InstallationService
 from .service_service import ServiceService
 from .validate_service import ValidateService
 
@@ -14,7 +15,7 @@ class MendService:
     def __init__(
         self,
         database: str | Path | None = None,
-    ):
+    ) -> None:
 
         self.cfg = Config()
 
@@ -42,7 +43,8 @@ class MendService:
         # ==================================================
 
         self.installation = (
-            self.service_installation()
+            InstallationService()
+            .first_installation()
         )
 
         if self.installation is None:
@@ -59,16 +61,9 @@ class MendService:
 
         self.gfix = self.installation.gfix
 
-    def service_installation(self):
-
-        from .installation_service import (
-            InstallationService,
-        )
-
-        return (
-            InstallationService()
-            .first_installation()
-        )
+    # ======================================================
+    # MEND
+    # ======================================================
 
     def mend(self):
 
@@ -166,6 +161,7 @@ class MendService:
                     + (
                         validation.stderr
                         or validation.stdout
+                        or "Brak informacji o błędzie."
                     )
                 )
 

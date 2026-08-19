@@ -34,15 +34,22 @@ class ProcessRunner:
         input_text: str | None = None,
         timeout: int = 600,
         operation: str = "PROCESS",
+        log_operation: bool = True,
     ) -> ProcessResult:
 
         start = time.perf_counter()
 
-        self.logger.log(
-            operation,
-            True,
-            "START",
-        )
+        # ==================================================
+        # START
+        # ==================================================
+
+        if log_operation:
+
+            self.logger.log(
+                operation,
+                True,
+                "START",
+            )
 
         try:
 
@@ -56,7 +63,10 @@ class ProcessRunner:
                 timeout=timeout,
             )
 
-            duration = time.perf_counter() - start
+            duration = (
+                time.perf_counter()
+                - start
+            )
 
             process_result = ProcessResult(
                 success=result.returncode == 0,
@@ -66,11 +76,19 @@ class ProcessRunner:
                 duration=duration,
             )
 
+            # ==================================================
+            # SUKCES
+            # ==================================================
+
             if process_result.success:
 
                 message = (
                     f"czas: {duration:.2f} s"
                 )
+
+            # ==================================================
+            # BŁĄD PROCESU
+            # ==================================================
 
             else:
 
@@ -85,40 +103,67 @@ class ProcessRunner:
                     f"{error[:500]}"
                 )
 
-            self.logger.log(
-                operation,
-                process_result.success,
-                message,
-            )
+            # ==================================================
+            # KONIEC
+            # ==================================================
+
+            if log_operation:
+
+                self.logger.log(
+                    operation,
+                    process_result.success,
+                    message,
+                )
 
             return process_result
 
+        # ======================================================
+        # TIMEOUT
+        # ======================================================
+
         except subprocess.TimeoutExpired:
 
-            duration = time.perf_counter() - start
-
-            self.logger.log(
-                operation,
-                False,
-                f"TIMEOUT | czas: {duration:.2f} s",
+            duration = (
+                time.perf_counter()
+                - start
             )
+
+            if log_operation:
+
+                self.logger.log(
+                    operation,
+                    False,
+                    f"TIMEOUT | czas: {duration:.2f} s",
+                )
 
             return ProcessResult(
                 success=False,
-                stderr="Przekroczono czas wykonywania procesu.",
+                stderr=(
+                    "Przekroczono czas "
+                    "wykonywania procesu."
+                ),
                 return_code=-1,
                 duration=duration,
             )
 
+        # ======================================================
+        # WYJĄTEK
+        # ======================================================
+
         except Exception as exc:
 
-            duration = time.perf_counter() - start
-
-            self.logger.log(
-                operation,
-                False,
-                f"{exc} | czas: {duration:.2f} s",
+            duration = (
+                time.perf_counter()
+                - start
             )
+
+            if log_operation:
+
+                self.logger.log(
+                    operation,
+                    False,
+                    f"{exc} | czas: {duration:.2f} s",
+                )
 
             return ProcessResult(
                 success=False,

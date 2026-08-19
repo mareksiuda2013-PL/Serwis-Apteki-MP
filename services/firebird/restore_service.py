@@ -45,14 +45,12 @@ class RestoreService(BaseFirebirdService):
         # ==================================================
 
         if not backup_file.exists():
-
             return (
                 False,
                 f"Nie znaleziono backupu:\n{backup_file}",
             )
 
         if not backup_file.is_file():
-
             return (
                 False,
                 f"Podana ścieżka backupu nie jest plikiem:\n"
@@ -64,7 +62,6 @@ class RestoreService(BaseFirebirdService):
         # ==================================================
 
         if database_file.exists() and not replace:
-
             return (
                 False,
                 f"Baza już istnieje:\n{database_file}",
@@ -79,7 +76,6 @@ class RestoreService(BaseFirebirdService):
         if not parent.exists():
 
             try:
-
                 parent.mkdir(
                     parents=True,
                     exist_ok=True,
@@ -107,7 +103,6 @@ class RestoreService(BaseFirebirdService):
         ]
 
         if replace:
-
             command.append(
                 "-rep"
             )
@@ -141,7 +136,7 @@ class RestoreService(BaseFirebirdService):
 
             return (
                 True,
-                result.stdout,
+                "Restore zakończony pomyślnie.",
             )
 
         return (

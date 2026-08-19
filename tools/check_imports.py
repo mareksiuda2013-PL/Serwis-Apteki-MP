@@ -18,7 +18,7 @@ MODULES = [
     "modules.firebird.page",
     "modules.firebird.controller",
     "services.firebird.firebird_service",
-    "services.firebird.installation_service",
+    "services.firebird.discovery.installation_service",
     "services.firebird.service_service",
     "services.firebird.database_service",
 ]

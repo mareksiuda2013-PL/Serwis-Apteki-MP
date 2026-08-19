@@ -5,7 +5,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from services.firebird.client import FirebirdClient
-from services.firebird.installation_service import InstallationService
+from services.firebird.discovery.installation_service import InstallationService
 
 
 def test_fetch_one():
