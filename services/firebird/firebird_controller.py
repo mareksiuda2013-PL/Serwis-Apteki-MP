@@ -8,20 +8,24 @@ from services.firebird.health_service import HealthService
 from services.firebird.recommendation_service import (
     RecommendationService,
 )
-from services.firebird.statistics_service import StatisticsService
+from services.firebird.report_service import (
+    ReportService,
+)
+from services.firebird.statistics_service import (
+    StatisticsService,
+)
+from services.firebird.workflow_service import (
+    WorkflowResult,
+    WorkflowService,
+)
 
 
 class FirebirdController:
     """
     Główny kontroler usług Firebird.
 
-    Odpowiada za połączenie warstwy GUI / workflow
-    z usługami odpowiedzialnymi za:
-        - informacje o bazie,
-        - statystyki,
-        - diagnostykę,
-        - rekomendacje,
-        - health check.
+    Łączy warstwę GUI / workflow
+    z usługami Firebird.
     """
 
     def __init__(self) -> None:
@@ -52,6 +56,14 @@ class FirebirdController:
             RecommendationService()
         )
 
+        self.report_service = (
+            ReportService()
+        )
+
+        self.workflow_service = (
+            WorkflowService()
+        )
+
     # ======================================================
     # DATABASE
     # ======================================================
@@ -71,9 +83,6 @@ class FirebirdController:
         self,
         database: str | None = None,
     ):
-        """
-        Pobiera podstawowe informacje o bazie Firebird.
-        """
 
         return self.firebird.get_info(
             database=database
@@ -87,9 +96,6 @@ class FirebirdController:
         self,
         path: str,
     ):
-        """
-        Wykonuje inspekcję wskazanego pliku bazy.
-        """
 
         return self.firebird.inspect_database(
             path
@@ -100,9 +106,6 @@ class FirebirdController:
     # ======================================================
 
     def statistics(self):
-        """
-        Pobiera statystyki bazy Firebird.
-        """
 
         return (
             self.statistics_service.statistics()
@@ -112,12 +115,14 @@ class FirebirdController:
     # DIAGNOSTYKA
     # ======================================================
 
-    def diagnostics(self):
-        """
-        Analizuje aktualne statystyki bazy.
-        """
+    def diagnostics(
+        self,
+        stats=None,
+    ):
 
-        stats = self.statistics()
+        if stats is None:
+
+            stats = self.statistics()
 
         return self.diagnostics_service.analyze(
             stats
@@ -132,10 +137,8 @@ class FirebirdController:
         diagnostic=None,
     ):
         """
-        Generuje rekomendacje na podstawie diagnostyki.
-
-        Jeżeli wynik diagnostyki nie został przekazany,
-        zostanie pobrany automatycznie.
+        Generuje rekomendacje na podstawie
+        aktualnej diagnostyki.
         """
 
         if diagnostic is None:
@@ -150,9 +153,108 @@ class FirebirdController:
     # HEALTH CHECK
     # ======================================================
 
-    def health(self):
+    def health(
+        self,
+        stats=None,
+    ):
+
+        return self.health_service.check(
+            stats
+        )
+
+    # ======================================================
+    # RAPORT
+    # ======================================================
+
+    def report(
+        self,
+        diagnostic=None,
+        health=None,
+        recommendations=None,
+    ):
         """
-        Wykonuje pełny health check bazy.
+        Generuje kompletny raport aktualnej bazy.
+
+        Jeżeli dane nie zostały przekazane,
+        kontroler pobiera je automatycznie.
         """
 
-        return self.health_service.check()
+        database = self.database()
+
+        statistics = self.statistics()
+
+        if health is None:
+
+            health = self.health(
+                statistics
+            )
+
+        if diagnostic is None:
+
+            diagnostic = self.diagnostics(
+                statistics
+            )
+
+        if recommendations is None:
+
+            recommendations = (
+                self.recommendations(
+                    diagnostic
+                )
+            )
+
+        return self.report_service.generate(
+            database=database,
+            statistics=statistics,
+            health=health,
+            recommendations=recommendations,
+        )
+
+    # ======================================================
+    # WORKFLOW
+    # ======================================================
+
+    def workflow(
+        self,
+        backup_file: str,
+    ) -> WorkflowResult:
+        """
+        Uruchamia kompletny bezpieczny workflow Firebird.
+
+        Aktualny przebieg:
+
+            diagnostyka
+                ↓
+            backup
+                ↓
+            ponowna diagnostyka
+                ↓
+            rekomendacje
+
+        Operacje naprawcze nie są wykonywane
+        automatycznie.
+        """
+
+        return self.workflow_service.run(
+            backup_file=backup_file
+        )
+
+    # ======================================================
+    # RAPORT WORKFLOW
+    # ======================================================
+
+    def workflow_report(
+        self,
+        workflow: WorkflowResult,
+    ):
+        """
+        Generuje raport na podstawie wyniku workflow.
+        """
+
+        return (
+            self.report_service
+            .generate_workflow_report(
+                database=self.database(),
+                workflow=workflow,
+            )
+        )

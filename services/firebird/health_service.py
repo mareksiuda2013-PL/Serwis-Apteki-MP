@@ -18,15 +18,19 @@ class HealthService:
     # PUBLIC
     # ==================================================
 
-    def check(self) -> DatabaseHealth:
+    def check(
+        self,
+        stats=None,
+    ) -> DatabaseHealth:
 
         health = DatabaseHealth()
 
         try:
 
-            stats = (
-                self.statistics_service.statistics()
-            )
+            if stats is None:
+                stats = (
+                    self.statistics_service.statistics()
+                )
 
         except Exception as exc:
 

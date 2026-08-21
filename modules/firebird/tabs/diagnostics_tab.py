@@ -551,21 +551,17 @@ class DiagnosticsTab(QWidget):
 
             stats = (
                 self.controller.statistics()
-            )
+        )
 
             diagnostic = (
-                self.controller.diagnostics()
-            )
+                self.controller.diagnostics(
+                    stats)
+        )
 
             health = (
-                self.controller.health()
-            )
-
-            recommendation_result = (
-                self.controller.recommendations(
-                    diagnostic
-                )
-            )
+                self.controller.health(
+                    stats)
+        )
 
         except Exception as exc:
 
@@ -722,5 +718,4 @@ class DiagnosticsTab(QWidget):
         )
 
         for label in labels:
-
             label.setText("-")
