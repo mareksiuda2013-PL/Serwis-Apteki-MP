@@ -3,10 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from models import DatabaseStatistics
-from models.database_health import (
-    DatabaseHealth,
-    HealthCheck,
-)
 
 
 @dataclass(slots=True)
@@ -32,7 +28,21 @@ class DiagnosticsService:
         stats: DatabaseStatistics,
     ) -> DiagnosticResult:
         """
-        Analizuje statystyki Firebird.
+        Analizuje statystyki Firebird i określa stan bazy.
+
+        Poziomy diagnostyki:
+
+            success
+                Baza działa prawidłowo.
+
+            warning
+                Wykryto parametr wymagający uwagi.
+
+            error
+                Wykryto poważny problem wymagający reakcji.
+
+        NO RESERVE jest traktowane jako informacja
+        konfiguracyjna, a nie jako błąd bazy.
         """
 
         result = DiagnosticResult()
@@ -64,12 +74,16 @@ class DiagnosticsService:
             stats.no_reserve
         )
 
+        # ==================================================
+        # OCENA
+        # ==================================================
+
         warnings: list[str] = []
         information: list[str] = []
 
-        # ==================================================
-        # TRANSACTION GAP
-        # ==================================================
+        # --------------------------------------------------
+        # WIEK TRANSAKCJI
+        # --------------------------------------------------
 
         if result.transaction_gap >= 1_000_000:
 
@@ -81,15 +95,16 @@ class DiagnosticsService:
 
         elif result.transaction_gap >= 100_000:
 
-            result.status = "warning"
+            if result.status != "error":
+                result.status = "warning"
 
             warnings.append(
                 "Duży dystans transakcji."
             )
 
-        # ==================================================
-        # ACTIVE GAP
-        # ==================================================
+        # --------------------------------------------------
+        # AKTYWNE TRANSAKCJE
+        # --------------------------------------------------
 
         if result.active_gap >= 100_000:
 
@@ -100,9 +115,9 @@ class DiagnosticsService:
                 "Duży dystans aktywnej transakcji."
             )
 
-        # ==================================================
-        # SNAPSHOT GAP
-        # ==================================================
+        # --------------------------------------------------
+        # SNAPSHOT
+        # --------------------------------------------------
 
         if result.snapshot_gap >= 100_000:
 
@@ -113,9 +128,9 @@ class DiagnosticsService:
                 "Duży dystans snapshot."
             )
 
-        # ==================================================
+        # --------------------------------------------------
         # NO RESERVE
-        # ==================================================
+        # --------------------------------------------------
 
         if result.no_reserve_warning:
 
@@ -157,155 +172,3 @@ class DiagnosticsService:
             )
 
         return result
-
-    # ======================================================
-    # HEALTH
-    # ======================================================
-
-    def health(
-        self,
-        stats: DatabaseStatistics,
-    ) -> DatabaseHealth:
-        """
-        Buduje wynik Health Check na podstawie
-        aktualnych statystyk Firebird.
-        """
-
-        health = DatabaseHealth()
-
-        # ==================================================
-        # TRANSAKCJE
-        # ==================================================
-
-        transaction_gap = (
-            stats.next_transaction
-            - stats.oldest_transaction
-        )
-
-        if transaction_gap >= 1_000_000:
-
-            health.checks.append(
-                HealthCheck(
-                    name="Transakcje",
-                    status="ERROR",
-                    value=str(transaction_gap),
-                    message=(
-                        "Bardzo duży dystans "
-                        "pomiędzy transakcjami."
-                    ),
-                )
-            )
-
-        elif transaction_gap >= 100_000:
-
-            health.checks.append(
-                HealthCheck(
-                    name="Transakcje",
-                    status="WARNING",
-                    value=str(transaction_gap),
-                    message=(
-                        "Duży dystans pomiędzy "
-                        "transakcjami."
-                    ),
-                )
-            )
-
-        else:
-
-            health.checks.append(
-                HealthCheck(
-                    name="Transakcje",
-                    status="OK",
-                    value=str(transaction_gap),
-                    message=(
-                        "Dystans transakcji "
-                        "wygląda prawidłowo."
-                    ),
-                )
-            )
-
-        # ==================================================
-        # FORCE WRITE
-        # ==================================================
-
-        health.checks.append(
-            HealthCheck(
-                name="Force Write",
-                status="OK"
-                if stats.forced_writes
-                else "WARNING",
-                value="ON"
-                if stats.forced_writes
-                else "OFF",
-                message=(
-                    "Forced Writes jest włączone."
-                    if stats.forced_writes
-                    else
-                    "Forced Writes jest wyłączone."
-                ),
-            )
-        )
-
-        # ==================================================
-        # NO RESERVE
-        # ==================================================
-
-        health.checks.append(
-            HealthCheck(
-                name="No Reserve",
-                status="OK"
-                if stats.no_reserve
-                else "WARNING",
-                value="ON"
-                if stats.no_reserve
-                else "OFF",
-                message=(
-                    "NO RESERVE jest ustawione."
-                    if stats.no_reserve
-                    else
-                    "NO RESERVE nie jest ustawione."
-                ),
-            )
-        )
-
-        # ==================================================
-        # STATUS KOŃCOWY
-        # ==================================================
-
-        errors = sum(
-            1
-            for check in health.checks
-            if check.status == "ERROR"
-        )
-
-        warnings = sum(
-            1
-            for check in health.checks
-            if check.status == "WARNING"
-        )
-
-        if errors:
-
-            health.status = "ERROR"
-
-            health.summary = (
-                f"Wykryto {errors} problemów."
-            )
-
-        elif warnings:
-
-            health.status = "WARNING"
-
-            health.summary = (
-                f"Wykryto {warnings} ostrzeżeń."
-            )
-
-        else:
-
-            health.status = "OK"
-
-            health.summary = (
-                "Baza wygląda prawidłowo."
-            )
-
-        return health
