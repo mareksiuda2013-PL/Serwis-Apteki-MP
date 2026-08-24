@@ -1,20 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Callable, Any
+from typing import Any, Callable
 
 from core.logger import logger
-
-
-@dataclass(slots=True)
-class OperationResult:
-    """
-    Wspólny wynik operacji administracyjnej Firebird.
-    """
-
-    success: bool
-    message: str = ""
-    result: Any = None
+from models.operation_result import OperationResult
 
 
 class FirebirdOperationService:
@@ -26,7 +15,10 @@ class FirebirdOperationService:
         - wykonanie funkcji serwisowej,
         - obsługę wyjątków,
         - logowanie,
-        - zwrócenie jednolitego wyniku.
+        - zwrócenie jednolitego OperationResult.
+
+    OperationResult jest wspólnym modelem
+    używanym w całej warstwie operacji Firebird.
     """
 
     def execute(
@@ -52,12 +44,12 @@ class FirebirdOperationService:
             return OperationResult(
                 success=False,
                 message=str(exc),
-                result=None,
+                error=str(exc),
             )
 
-        # --------------------------------------------------
-        # OPERACJE ZWRACAJĄCE (bool, log)
-        # --------------------------------------------------
+        # ==================================================
+        # WYNIK (bool, message)
+        # ==================================================
 
         if (
             isinstance(result, tuple)
@@ -67,6 +59,10 @@ class FirebirdOperationService:
 
             success, message = result
 
+            message = str(
+                message or ""
+            )
+
             if success:
 
                 logger.info(
@@ -81,24 +77,57 @@ class FirebirdOperationService:
 
             return OperationResult(
                 success=success,
-                message=str(message or ""),
-                result=result,
+                message=message,
+                output=message if success else "",
+                error=message if not success else "",
             )
 
-        # --------------------------------------------------
-        # OPERACJE ZWRACAJĄCE OBIEKT Z .SUCCESS
-        # --------------------------------------------------
+        # ==================================================
+        # WYNIK POSIADAJĄCY .success
+        # ==================================================
 
         if hasattr(result, "success"):
 
             success = bool(
-                result.success
+                getattr(
+                    result,
+                    "success",
+                    False,
+                )
+            )
+
+            output = str(
+                getattr(
+                    result,
+                    "stdout",
+                    "",
+                )
+                or getattr(
+                    result,
+                    "output",
+                    "",
+                )
+                or ""
+            )
+
+            error = str(
+                getattr(
+                    result,
+                    "stderr",
+                    "",
+                )
+                or getattr(
+                    result,
+                    "error",
+                    "",
+                )
+                or ""
             )
 
             message = (
-                getattr(result, "stdout", "")
-                or getattr(result, "stderr", "")
-                or ""
+                output
+                if success
+                else error or output
             )
 
             if success:
@@ -115,13 +144,48 @@ class FirebirdOperationService:
 
             return OperationResult(
                 success=success,
-                message=str(message),
-                result=result,
+                message=message,
+                output=output,
+                error=error,
+                command=str(
+                    getattr(
+                        result,
+                        "command",
+                        "",
+                    )
+                    or ""
+                ),
+                exit_code=int(
+                    getattr(
+                        result,
+                        "exit_code",
+                        0,
+                    )
+                    or 0
+                ),
+                started=getattr(
+                    result,
+                    "started",
+                    None,
+                ),
+                finished=getattr(
+                    result,
+                    "finished",
+                    None,
+                ),
+                duration=float(
+                    getattr(
+                        result,
+                        "duration",
+                        0.0,
+                    )
+                    or 0.0
+                ),
             )
 
-        # --------------------------------------------------
+        # ==================================================
         # STANDARDOWY SUKCES
-        # --------------------------------------------------
+        # ==================================================
 
         logger.info(
             f"Operacja zakończona pomyślnie: {name}"
@@ -130,5 +194,4 @@ class FirebirdOperationService:
         return OperationResult(
             success=True,
             message="Operacja zakończona pomyślnie.",
-            result=result,
         )

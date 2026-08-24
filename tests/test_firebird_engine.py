@@ -6,81 +6,82 @@ from models.operation_result import OperationResult
 from services.firebird_engine import FirebirdEngine
 
 
+def create_engine():
+
+    operation_service = MagicMock()
+
+    engine = FirebirdEngine(
+        operation_service=operation_service
+    )
+
+    return engine, operation_service
+
+
 # ==========================================================
 # BACKUP
 # ==========================================================
 
 
-def test_engine_backup_success():
+def test_engine_backup():
 
-    with patch(
-        "services.firebird_engine.BackupService"
-    ) as service_cls:
+    engine, operation_service = create_engine()
 
-        service_cls.return_value.backup.return_value = (
-            True,
-            "Backup OK",
+    expected = OperationResult(
+        success=True,
+        message="Backup OK",
+    )
+
+    operation_service.execute.return_value = expected
+
+    result = engine.backup(
+        "C:/backup/test.fbk"
+    )
+
+    assert result is expected
+
+    operation_service.execute.assert_called_once()
+
+    _, name = operation_service.execute.call_args.args
+
+    assert name == "BACKUP"
+
+
+def test_engine_backup_executes_service():
+
+    engine, operation_service = create_engine()
+
+    def execute(operation, name):
+
+        assert name == "BACKUP"
+
+        with patch(
+            "services.firebird_engine.BackupService"
+        ) as service_cls:
+
+            service_cls.return_value.backup.return_value = (
+                True,
+                "Backup OK",
+            )
+
+            result = operation()
+
+            service_cls.return_value.backup.assert_called_once_with(
+                "C:/backup/test.fbk"
+            )
+
+        return OperationResult(
+            success=result[0],
+            message=result[1],
         )
 
-        engine = FirebirdEngine()
+    operation_service.execute.side_effect = execute
 
-        result = engine.backup(
-            "C:/backup/test.fbk"
-        )
-
-    assert isinstance(
-        result,
-        OperationResult,
+    result = engine.backup(
+        "C:/backup/test.fbk"
     )
 
     assert result.success is True
     assert result.message == "Backup OK"
-
-    service_cls.return_value.backup.assert_called_once_with(
-        "C:/backup/test.fbk"
-    )
-
-
-def test_engine_backup_failure():
-
-    with patch(
-        "services.firebird_engine.BackupService"
-    ) as service_cls:
-
-        service_cls.return_value.backup.return_value = (
-            False,
-            "Backup ERROR",
-        )
-
-        engine = FirebirdEngine()
-
-        result = engine.backup(
-            "C:/backup/test.fbk"
-        )
-
-    assert result.success is False
-    assert result.message == "Backup ERROR"
-
-
-def test_engine_backup_exception():
-
-    with patch(
-        "services.firebird_engine.BackupService"
-    ) as service_cls:
-
-        service_cls.return_value.backup.side_effect = (
-            RuntimeError("Backup exception")
-        )
-
-        engine = FirebirdEngine()
-
-        result = engine.backup(
-            "C:/backup/test.fbk"
-        )
-
-    assert result.success is False
-    assert result.message == "Backup exception"
-    assert result.error == "Backup exception"
 
 
 # ==========================================================
@@ -88,104 +89,70 @@ def test_engine_backup_exception():
 # ==========================================================
 
 
-def test_engine_restore_success():
+def test_engine_restore():
 
-    with patch(
-        "services.firebird_engine.RestoreService"
-    ) as service_cls:
+    engine, operation_service = create_engine()
 
-        service_cls.return_value.restore.return_value = (
-            True,
-            "Restore OK",
-        )
-
-        engine = FirebirdEngine()
-
-        result = engine.restore(
-            "C:/backup/test.fbk",
-            "C:/database/test.fdb",
-        )
-
-    assert result.success is True
-    assert result.message == "Restore OK"
-
-    service_cls.return_value.restore.assert_called_once_with(
-        backup_file="C:/backup/test.fbk",
-        database_file="C:/database/test.fdb",
-        replace=True,
+    expected = OperationResult(
+        success=True,
+        message="Restore OK",
     )
 
+    operation_service.execute.return_value = expected
 
-def test_engine_restore_without_replace():
+    result = engine.restore(
+        "C:/backup/test.fbk",
+        "C:/database/test.fdb",
+    )
 
-    with patch(
-        "services.firebird_engine.RestoreService"
-    ) as service_cls:
+    assert result is expected
 
-        service_cls.return_value.restore.return_value = (
-            True,
-            "Restore OK",
+    operation_service.execute.assert_called_once()
+
+    _, name = operation_service.execute.call_args.args
+
+    assert name == "RESTORE"
+
+
+def test_engine_restore_passes_arguments():
+
+    engine, operation_service = create_engine()
+
+    def execute(operation, name):
+
+        assert name == "RESTORE"
+
+        with patch(
+            "services.firebird_engine.RestoreService"
+        ) as service_cls:
+
+            service_cls.return_value.restore.return_value = (
+                True,
+                "Restore OK",
+            )
+
+            result = operation()
+
+            service_cls.return_value.restore.assert_called_once_with(
+                backup_file="C:/backup/test.fbk",
+                database_file="C:/database/test.fdb",
+                replace=False,
+            )
+
+        return OperationResult(
+            success=result[0],
+            message=result[1],
         )
 
-        engine = FirebirdEngine()
+    operation_service.execute.side_effect = execute
 
-        result = engine.restore(
-            "C:/backup/test.fbk",
-            "C:/database/test.fdb",
-            replace=False,
-        )
-
-    assert result.success is True
-
-    service_cls.return_value.restore.assert_called_once_with(
-        backup_file="C:/backup/test.fbk",
-        database_file="C:/database/test.fdb",
+    result = engine.restore(
+        "C:/backup/test.fbk",
+        "C:/database/test.fdb",
         replace=False,
     )
 
-
-def test_engine_restore_failure():
-
-    with patch(
-        "services.firebird_engine.RestoreService"
-    ) as service_cls:
-
-        service_cls.return_value.restore.return_value = (
-            False,
-            "Restore ERROR",
-        )
-
-        engine = FirebirdEngine()
-
-        result = engine.restore(
-            "C:/backup/test.fbk",
-            "C:/database/test.fdb",
-        )
-
-    assert result.success is False
-    assert result.message == "Restore ERROR"
-
-
-def test_engine_restore_exception():
-
-    with patch(
-        "services.firebird_engine.RestoreService"
-    ) as service_cls:
-
-        service_cls.return_value.restore.side_effect = (
-            RuntimeError("Restore exception")
-        )
-
-        engine = FirebirdEngine()
-
-        result = engine.restore(
-            "C:/backup/test.fbk",
-            "C:/database/test.fdb",
-        )
-
-    assert result.success is False
-    assert result.message == "Restore exception"
-    assert result.error == "Restore exception"
+    assert result.success is True
 
 
 # ==========================================================
@@ -193,90 +160,64 @@ def test_engine_restore_exception():
 # ==========================================================
 
 
-def test_engine_validate_success():
+def test_engine_validate():
 
-    process_result = MagicMock(
+    engine, operation_service = create_engine()
+
+    expected = OperationResult(
         success=True,
-        stdout="Validation OK",
-        stderr="",
-        error="",
-        command="gfix -validate",
-        exit_code=0,
-        started=None,
-        finished=None,
-        duration=1.5,
+        message="Validation OK",
     )
 
-    with patch(
-        "services.firebird_engine.ValidateService"
-    ) as service_cls:
+    operation_service.execute.return_value = expected
 
-        service_cls.return_value.validate.return_value = (
-            process_result
+    result = engine.validate()
+
+    assert result is expected
+
+    operation_service.execute.assert_called_once()
+
+    _, name = operation_service.execute.call_args.args
+
+    assert name == "VALIDATE"
+
+
+def test_engine_validate_executes_service():
+
+    engine, operation_service = create_engine()
+
+    def execute(operation, name):
+
+        assert name == "VALIDATE"
+
+        with patch(
+            "services.firebird_engine.ValidateService"
+        ) as service_cls:
+
+            service_cls.return_value.validate.return_value = (
+                MagicMock(
+                    success=True,
+                    stdout="Validation OK",
+                    stderr="",
+                )
+            )
+
+            result = operation()
+
+            service_cls.return_value.validate.assert_called_once_with()
+
+        return OperationResult(
+            success=True,
+            message=result.stdout,
+            output=result.stdout,
         )
 
-        engine = FirebirdEngine()
+    operation_service.execute.side_effect = execute
 
-        result = engine.validate()
+    result = engine.validate()
 
     assert result.success is True
     assert result.message == "Validation OK"
-    assert result.output == "Validation OK"
-    assert result.error == ""
-    assert result.command == "gfix -validate"
-    assert result.exit_code == 0
-    assert result.duration == 1.5
-
-
-def test_engine_validate_failure():
-
-    process_result = MagicMock(
-        success=False,
-        stdout="",
-        stderr="Validation ERROR",
-        error="",
-        command="gfix -validate",
-        exit_code=1,
-        started=None,
-        finished=None,
-        duration=2.0,
-    )
-
-    with patch(
-        "services.firebird_engine.ValidateService"
-    ) as service_cls:
-
-        service_cls.return_value.validate.return_value = (
-            process_result
-        )
-
-        engine = FirebirdEngine()
-
-        result = engine.validate()
-
-    assert result.success is False
-    assert result.message == "Validation ERROR"
-    assert result.error == "Validation ERROR"
-    assert result.exit_code == 1
-
-
-def test_engine_validate_exception():
-
-    with patch(
-        "services.firebird_engine.ValidateService"
-    ) as service_cls:
-
-        service_cls.return_value.validate.side_effect = (
-            RuntimeError("Validate exception")
-        )
-
-        engine = FirebirdEngine()
-
-        result = engine.validate()
-
-    assert result.success is False
-    assert result.message == "Validate exception"
-    assert result.error == "Validate exception"
 
 
 # ==========================================================
@@ -284,86 +225,64 @@ def test_engine_validate_exception():
 # ==========================================================
 
 
-def test_engine_sweep_success():
+def test_engine_sweep():
 
-    process_result = MagicMock(
+    engine, operation_service = create_engine()
+
+    expected = OperationResult(
         success=True,
-        stdout="Sweep OK",
-        stderr="",
-        error="",
-        command="gfix -sweep",
-        exit_code=0,
-        started=None,
-        finished=None,
-        duration=1.0,
+        message="Sweep OK",
     )
 
-    with patch(
-        "services.firebird_engine.SweepService"
-    ) as service_cls:
+    operation_service.execute.return_value = expected
 
-        service_cls.return_value.sweep.return_value = (
-            process_result
+    result = engine.sweep()
+
+    assert result is expected
+
+    operation_service.execute.assert_called_once()
+
+    _, name = operation_service.execute.call_args.args
+
+    assert name == "SWEEP"
+
+
+def test_engine_sweep_executes_service():
+
+    engine, operation_service = create_engine()
+
+    def execute(operation, name):
+
+        assert name == "SWEEP"
+
+        with patch(
+            "services.firebird_engine.SweepService"
+        ) as service_cls:
+
+            service_cls.return_value.sweep.return_value = (
+                MagicMock(
+                    success=True,
+                    stdout="Sweep OK",
+                    stderr="",
+                )
+            )
+
+            result = operation()
+
+            service_cls.return_value.sweep.assert_called_once_with()
+
+        return OperationResult(
+            success=True,
+            message=result.stdout,
+            output=result.stdout,
         )
 
-        engine = FirebirdEngine()
+    operation_service.execute.side_effect = execute
 
-        result = engine.sweep()
+    result = engine.sweep()
 
     assert result.success is True
     assert result.message == "Sweep OK"
-    assert result.output == "Sweep OK"
-    assert result.error == ""
-
-
-def test_engine_sweep_failure():
-
-    process_result = MagicMock(
-        success=False,
-        stdout="",
-        stderr="Sweep ERROR",
-        error="",
-        command="gfix -sweep",
-        exit_code=1,
-        started=None,
-        finished=None,
-        duration=1.0,
-    )
-
-    with patch(
-        "services.firebird_engine.SweepService"
-    ) as service_cls:
-
-        service_cls.return_value.sweep.return_value = (
-            process_result
-        )
-
-        engine = FirebirdEngine()
-
-        result = engine.sweep()
-
-    assert result.success is False
-    assert result.message == "Sweep ERROR"
-    assert result.error == "Sweep ERROR"
-
-
-def test_engine_sweep_exception():
-
-    with patch(
-        "services.firebird_engine.SweepService"
-    ) as service_cls:
-
-        service_cls.return_value.sweep.side_effect = (
-            RuntimeError("Sweep exception")
-        )
-
-        engine = FirebirdEngine()
-
-        result = engine.sweep()
-
-    assert result.success is False
-    assert result.message == "Sweep exception"
-    assert result.error == "Sweep exception"
 
 
 # ==========================================================
@@ -371,191 +290,84 @@ def test_engine_sweep_exception():
 # ==========================================================
 
 
-def test_engine_mend_success():
+def test_engine_mend():
 
-    process_result = MagicMock(
+    engine, operation_service = create_engine()
+
+    expected = OperationResult(
         success=True,
-        stdout="MEND OK",
-        stderr="",
-        error="",
-        command="gfix -mend",
-        exit_code=0,
-        started=None,
-        finished=None,
-        duration=3.0,
+        message="MEND OK",
     )
 
-    with patch(
-        "services.firebird_engine.MendService"
-    ) as service_cls:
+    operation_service.execute.return_value = expected
 
-        service_cls.return_value.mend.return_value = (
-            process_result
+    result = engine.mend()
+
+    assert result is expected
+
+    operation_service.execute.assert_called_once()
+
+    _, name = operation_service.execute.call_args.args
+
+    assert name == "MEND"
+
+
+def test_engine_mend_executes_service():
+
+    engine, operation_service = create_engine()
+
+    def execute(operation, name):
+
+        assert name == "MEND"
+
+        with patch(
+            "services.firebird_engine.MendService"
+        ) as service_cls:
+
+            service_cls.return_value.mend.return_value = (
+                MagicMock(
+                    success=True,
+                    stdout="MEND OK",
+                    stderr="",
+                )
+            )
+
+            result = operation()
+
+            service_cls.return_value.mend.assert_called_once_with()
+
+        return OperationResult(
+            success=True,
+            message=result.stdout,
+            output=result.stdout,
         )
 
-        engine = FirebirdEngine()
+    operation_service.execute.side_effect = execute
 
-        result = engine.mend()
+    result = engine.mend()
 
     assert result.success is True
     assert result.message == "MEND OK"
-    assert result.output == "MEND OK"
-    assert result.error == ""
-    assert result.duration == 3.0
-
-
-def test_engine_mend_failure():
-
-    process_result = MagicMock(
-        success=False,
-        stdout="",
-        stderr="MEND ERROR",
-        error="",
-        command="gfix -mend",
-        exit_code=1,
-        started=None,
-        finished=None,
-        duration=3.0,
-    )
-
-    with patch(
-        "services.firebird_engine.MendService"
-    ) as service_cls:
-
-        service_cls.return_value.mend.return_value = (
-            process_result
-        )
-
-        engine = FirebirdEngine()
-
-        result = engine.mend()
-
-    assert result.success is False
-    assert result.message == "MEND ERROR"
-    assert result.error == "MEND ERROR"
-
-
-def test_engine_mend_exception():
-
-    with patch(
-        "services.firebird_engine.MendService"
-    ) as service_cls:
-
-        service_cls.return_value.mend.side_effect = (
-            RuntimeError("MEND exception")
-        )
-
-        engine = FirebirdEngine()
-
-        result = engine.mend()
-
-    assert result.success is False
-    assert result.message == "MEND exception"
-    assert result.error == "MEND exception"
 
 
 # ==========================================================
-# PROCESS RESULT CONVERSION
+# INJECTION
 # ==========================================================
 
 
-def test_from_process_result_success():
+def test_engine_accepts_operation_service():
 
-    process_result = MagicMock(
-        success=True,
-        stdout="OUTPUT",
-        stderr="",
-        error="",
-        command="TEST COMMAND",
-        exit_code=0,
-        started="START",
-        finished="FINISH",
-        duration=2.5,
+    operation_service = MagicMock()
+
+    engine = FirebirdEngine(
+        operation_service=operation_service
     )
 
-    result = FirebirdEngine._from_process_result(
-        process_result
-    )
-
-    assert result.success is True
-    assert result.message == "OUTPUT"
-    assert result.output == "OUTPUT"
-    assert result.error == ""
-    assert result.command == "TEST COMMAND"
-    assert result.exit_code == 0
-    assert result.started == "START"
-    assert result.finished == "FINISH"
-    assert result.duration == 2.5
+    assert engine.operation_service is operation_service
 
 
-def test_from_process_result_failure():
+def test_engine_creates_operation_service():
 
-    process_result = MagicMock(
-        success=False,
-        stdout="OUTPUT",
-        stderr="ERROR",
-        error="",
-        command="TEST COMMAND",
-        exit_code=1,
-        started="START",
-        finished="FINISH",
-        duration=2.5,
-    )
+    engine = FirebirdEngine()
 
-    result = FirebirdEngine._from_process_result(
-        process_result
-    )
-
-    assert result.success is False
-    assert result.message == "ERROR"
-    assert result.output == "OUTPUT"
-    assert result.error == "ERROR"
-    assert result.command == "TEST COMMAND"
-    assert result.exit_code == 1
-
-
-def test_from_process_result_uses_output_when_no_stderr():
-
-    process_result = MagicMock(
-        success=False,
-        stdout="OUTPUT",
-        stderr="",
-        error="",
-        command="TEST COMMAND",
-        exit_code=1,
-        started=None,
-        finished=None,
-        duration=0.0,
-    )
-
-    result = FirebirdEngine._from_process_result(
-        process_result
-    )
-
-    assert result.success is False
-    assert result.message == "OUTPUT"
-    assert result.output == "OUTPUT"
-    assert result.error == ""
-
-
-def test_from_process_result_uses_output_attribute():
-
-    process_result = MagicMock(
-        success=True,
-        stdout="",
-        stderr="",
-        error="",
-        output="ALTERNATIVE OUTPUT",
-        command="TEST COMMAND",
-        exit_code=0,
-        started=None,
-        finished=None,
-        duration=0.0,
-    )
-
-    result = FirebirdEngine._from_process_result(
-        process_result
-    )
-
-    assert result.message == "ALTERNATIVE OUTPUT"
-    assert result.output == "ALTERNATIVE OUTPUT"
+    assert engine.operation_service is not None
