@@ -3,13 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock
 
-from services.firebird.backup_service import BackupService
+from services.firebird.sweep_service import SweepService
 
 
 def create_service():
 
-    service = BackupService.__new__(
-        BackupService
+    service = SweepService.__new__(
+        SweepService
     )
 
     service.cfg = MagicMock()
@@ -20,8 +20,8 @@ def create_service():
         r"C:\KSBAZA\KS-APW\WAPTEKA.FDB"
     )
 
-    service.gbak = Path(
-        r"C:\Firebird\gbak.exe"
+    service.gfix = Path(
+        r"C:\Firebird\gfix.exe"
     )
 
     service.runner = MagicMock()
@@ -34,28 +34,21 @@ def create_service():
 # ==========================================================
 
 
-def test_backup_success(tmp_path):
+def test_sweep_success():
 
     service = create_service()
 
     expected = MagicMock(
         success=True,
-        stdout="Backup OK",
+        stdout="Sweep OK",
         stderr="",
     )
 
     service.runner.run.return_value = expected
 
-    destination = tmp_path / "backup.fbk"
+    result = service.sweep()
 
-    result = service.backup(
-        destination
-    )
-
-    assert result == (
-        True,
-        "Backup OK",
-    )
+    assert result is expected
 
 
 # ==========================================================
@@ -63,28 +56,21 @@ def test_backup_success(tmp_path):
 # ==========================================================
 
 
-def test_backup_failure(tmp_path):
+def test_sweep_failure():
 
     service = create_service()
 
     expected = MagicMock(
         success=False,
         stdout="",
-        stderr="Backup ERROR",
+        stderr="Sweep ERROR",
     )
 
     service.runner.run.return_value = expected
 
-    destination = tmp_path / "backup.fbk"
+    result = service.sweep()
 
-    result = service.backup(
-        destination
-    )
-
-    assert result == (
-        False,
-        "Backup ERROR",
-    )
+    assert result is expected
 
 
 # ==========================================================
@@ -92,7 +78,7 @@ def test_backup_failure(tmp_path):
 # ==========================================================
 
 
-def test_backup_builds_correct_command(tmp_path):
+def test_sweep_builds_correct_command():
 
     service = create_service()
 
@@ -102,11 +88,9 @@ def test_backup_builds_correct_command(tmp_path):
         stderr="",
     )
 
-    destination = (
-        tmp_path / "backup.fbk"
-    )
+    service.sweep()
 
-    service.backup(destination)
+    service.runner.run.assert_called_once()
 
     command = (
         service.runner
@@ -115,16 +99,13 @@ def test_backup_builds_correct_command(tmp_path):
     )
 
     assert command == [
-        r"C:\Firebird\gbak.exe",
-        "-b",
-        "-g",
-        "-v",
+        r"C:\Firebird\gfix.exe",
+        "-sweep",
+        r"C:\KSBAZA\KS-APW\WAPTEKA.FDB",
         "-user",
         "SYSDBA",
         "-password",
         "masterkey",
-        r"C:\KSBAZA\KS-APW\WAPTEKA.FDB",
-        str(destination),
     ]
 
 
@@ -133,7 +114,7 @@ def test_backup_builds_correct_command(tmp_path):
 # ==========================================================
 
 
-def test_backup_uses_correct_runner_options(tmp_path):
+def test_sweep_uses_correct_runner_options():
 
     service = create_service()
 
@@ -143,11 +124,7 @@ def test_backup_uses_correct_runner_options(tmp_path):
         stderr="",
     )
 
-    destination = (
-        tmp_path / "backup.fbk"
-    )
-
-    service.backup(destination)
+    service.sweep()
 
     kwargs = (
         service.runner
@@ -155,8 +132,7 @@ def test_backup_uses_correct_runner_options(tmp_path):
         .call_args.kwargs
     )
 
-    assert kwargs["timeout"] == 1800
-    assert kwargs["operation"] == "BACKUP"
+    assert kwargs["operation"] == "SWEEP"
 
 
 # ==========================================================
@@ -164,7 +140,7 @@ def test_backup_uses_correct_runner_options(tmp_path):
 # ==========================================================
 
 
-def test_backup_uses_configured_database(tmp_path):
+def test_sweep_uses_configured_database():
 
     service = create_service()
 
@@ -178,11 +154,7 @@ def test_backup_uses_configured_database(tmp_path):
         stderr="",
     )
 
-    destination = (
-        tmp_path / "backup.fbk"
-    )
-
-    service.backup(destination)
+    service.sweep()
 
     command = (
         service.runner
@@ -201,7 +173,7 @@ def test_backup_uses_configured_database(tmp_path):
 # ==========================================================
 
 
-def test_backup_uses_configured_credentials(tmp_path):
+def test_sweep_uses_configured_credentials():
 
     service = create_service()
 
@@ -214,11 +186,7 @@ def test_backup_uses_configured_credentials(tmp_path):
         stderr="",
     )
 
-    destination = (
-        tmp_path / "backup.fbk"
-    )
-
-    service.backup(destination)
+    service.sweep()
 
     command = (
         service.runner
@@ -231,42 +199,11 @@ def test_backup_uses_configured_credentials(tmp_path):
 
 
 # ==========================================================
-# DESTINATION DIRECTORY
-# ==========================================================
-
-
-def test_backup_creates_destination_directory(
-    tmp_path,
-):
-
-    service = create_service()
-
-    service.runner.run.return_value = MagicMock(
-        success=True,
-        stdout="OK",
-        stderr="",
-    )
-
-    destination = (
-        tmp_path
-        / "nested"
-        / "backup"
-        / "test.fbk"
-    )
-
-    service.backup(destination)
-
-    assert destination.parent.exists()
-
-
-# ==========================================================
 # RUNNER EXCEPTION
 # ==========================================================
 
 
-def test_backup_propagates_runner_exception(
-    tmp_path,
-):
+def test_sweep_propagates_runner_exception():
 
     service = create_service()
 
@@ -276,13 +213,9 @@ def test_backup_propagates_runner_exception(
         )
     )
 
-    destination = (
-        tmp_path / "backup.fbk"
-    )
-
     try:
 
-        service.backup(destination)
+        service.sweep()
 
     except RuntimeError as exc:
 

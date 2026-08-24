@@ -6,6 +6,11 @@ from unittest.mock import MagicMock, patch
 from services.firebird.validate_service import ValidateService
 
 
+# ==========================================================
+# HELPERS
+# ==========================================================
+
+
 def create_service():
 
     service = ValidateService.__new__(
@@ -201,10 +206,8 @@ def test_validate_propagates_runner_exception():
 
     service = create_service()
 
-    service.runner.run.side_effect = (
-        RuntimeError(
-            "ProcessRunner ERROR"
-        )
+    service.runner.run.side_effect = RuntimeError(
+        "ProcessRunner ERROR"
     )
 
     try:
@@ -221,4 +224,165 @@ def test_validate_propagates_runner_exception():
 
         raise AssertionError(
             "Expected RuntimeError"
+        )
+
+
+# ==========================================================
+# CONSTRUCTOR — GBFIX MISSING
+# ==========================================================
+
+
+def test_validate_constructor_fails_when_gfix_missing():
+
+    with patch(
+        "services.firebird.validate_service.Config"
+    ), patch(
+        "services.firebird.validate_service.ServiceService"
+    ), patch(
+        "services.firebird.validate_service.ProcessRunner"
+    ), patch(
+        "services.firebird.validate_service.InstallationService"
+    ) as installation_cls:
+
+        installation = MagicMock()
+        installation.gfix = None
+
+        installation_cls.return_value.first_installation.return_value = (
+            installation
+        )
+
+        try:
+
+            ValidateService()
+
+        except RuntimeError as exc:
+
+            assert str(exc) == (
+                "Nie znaleziono gfix.exe."
+            )
+
+        else:
+
+            raise AssertionError(
+                "Expected RuntimeError"
+            )
+
+
+# ==========================================================
+# CONSTRUCTOR — FIREBIRD MISSING
+# ==========================================================
+
+
+def test_validate_constructor_fails_when_firebird_missing():
+
+    with patch(
+        "services.firebird.validate_service.Config"
+    ), patch(
+        "services.firebird.validate_service.ServiceService"
+    ), patch(
+        "services.firebird.validate_service.ProcessRunner"
+    ), patch(
+        "services.firebird.validate_service.InstallationService"
+    ) as installation_cls:
+
+        installation_cls.return_value.first_installation.return_value = (
+            None
+        )
+
+        try:
+
+            ValidateService()
+
+        except RuntimeError as exc:
+
+            assert str(exc) == (
+                "Nie znaleziono instalacji Firebird."
+            )
+
+        else:
+
+            raise AssertionError(
+                "Expected RuntimeError"
+            )
+
+
+# ==========================================================
+# CONSTRUCTOR — CUSTOM DATABASE
+# ==========================================================
+
+
+def test_validate_constructor_uses_provided_database():
+
+    database = Path(
+        r"C:\test\custom.fdb"
+    )
+
+    with patch(
+        "services.firebird.validate_service.Config"
+    ) as config_cls, patch(
+        "services.firebird.validate_service.ServiceService"
+    ), patch(
+        "services.firebird.validate_service.ProcessRunner"
+    ), patch(
+        "services.firebird.validate_service.InstallationService"
+    ) as installation_cls:
+
+        config_cls.return_value.database = (
+            r"C:\default\database.fdb"
+        )
+
+        installation = MagicMock()
+        installation.gfix = Path(
+            r"C:\Firebird\gfix.exe"
+        )
+
+        installation_cls.return_value.first_installation.return_value = (
+            installation
+        )
+
+        service = ValidateService(
+            database=database
+        )
+
+        assert service.database == database
+
+
+# ==========================================================
+# CONSTRUCTOR — CONFIGURED DATABASE
+# ==========================================================
+
+
+def test_validate_constructor_uses_configured_database():
+
+    configured_database = (
+        r"C:\configured\database.fdb"
+    )
+
+    with patch(
+        "services.firebird.validate_service.Config"
+    ) as config_cls, patch(
+        "services.firebird.validate_service.ServiceService"
+    ), patch(
+        "services.firebird.validate_service.ProcessRunner"
+    ), patch(
+        "services.firebird.validate_service.InstallationService"
+    ) as installation_cls:
+
+        config_cls.return_value.database = (
+            configured_database
+        )
+
+        installation = MagicMock()
+        installation.gfix = Path(
+            r"C:\Firebird\gfix.exe"
+        )
+
+        installation_cls.return_value.first_installation.return_value = (
+            installation
+        )
+
+        service = ValidateService()
+
+        assert service.database == Path(
+            configured_database
         )
