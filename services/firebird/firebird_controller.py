@@ -158,6 +158,10 @@ class FirebirdController:
         stats=None,
     ):
 
+        if stats is None:
+
+            stats = self.statistics()
+
         return self.health_service.check(
             stats
         )
