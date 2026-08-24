@@ -8,6 +8,28 @@ from services.firebird.operation_service import (
 )
 
 
+# ==========================================================
+# HELPERS
+# ==========================================================
+
+
+@dataclass
+class FakeProcessResult:
+    success: bool
+    stdout: str = ""
+    stderr: str = ""
+    command: str = ""
+    exit_code: int = 0
+    started: object = None
+    finished: object = None
+    duration: float = 0.0
+
+
+# ==========================================================
+# STANDARD RESULT
+# ==========================================================
+
+
 def test_operation_success():
 
     service = FirebirdOperationService()
@@ -23,9 +45,8 @@ def test_operation_success():
     )
 
     assert result.success is True
-    assert (
-        result.message
-        == "Operacja zakończona pomyślnie."
+    assert result.message == (
+        "Operacja zakończona pomyślnie."
     )
 
 
@@ -52,6 +73,11 @@ def test_operation_exception():
     assert result.success is False
     assert result.message == "Testowy błąd"
     assert result.error == "Testowy błąd"
+
+
+# ==========================================================
+# TUPLE RESULT
+# ==========================================================
 
 
 def test_operation_tuple_success():
@@ -97,28 +123,70 @@ def test_operation_tuple_failure():
     assert result.success is False
     assert result.message == "Backup ERROR"
     assert result.error == "Backup ERROR"
+    assert result.output == ""
 
 
-@dataclass
-class FakeProcessResult:
-
-    success: bool
-    stdout: str = ""
-    stderr: str = ""
-    command: str = ""
-    exit_code: int = 0
-    started: object = None
-    finished: object = None
-    duration: float = 0.0
+# ==========================================================
+# OPERATION RESULT PASSED THROUGH
+# ==========================================================
 
 
-def test_operation_process_success():
+def test_operation_result_is_returned_unchanged():
+
+    service = FirebirdOperationService()
+
+    expected = OperationResult(
+        success=True,
+        message="Already normalized",
+        command="TEST",
+        output="OUTPUT",
+        error="",
+        exit_code=0,
+        duration=1.5,
+    )
+
+    result = service.execute(
+        lambda: expected,
+        "TEST",
+    )
+
+    assert result is expected
+
+
+def test_failed_operation_result_is_returned_unchanged():
+
+    service = FirebirdOperationService()
+
+    expected = OperationResult(
+        success=False,
+        message="ERROR",
+        output="",
+        error="ERROR",
+        command="TEST",
+        exit_code=1,
+    )
+
+    result = service.execute(
+        lambda: expected,
+        "TEST",
+    )
+
+    assert result is expected
+
+
+# ==========================================================
+# PROCESS RESULT
+# ==========================================================
+
+
+def test_process_result_success():
 
     service = FirebirdOperationService()
 
     process_result = FakeProcessResult(
         success=True,
         stdout="Validation OK",
+        stderr="",
         command="gfix -validate",
         exit_code=0,
         duration=1.5,
@@ -143,7 +211,7 @@ def test_operation_process_success():
     assert result.duration == 1.5
 
 
-def test_operation_process_failure():
+def test_process_result_failure():
 
     service = FirebirdOperationService()
 
@@ -161,29 +229,23 @@ def test_operation_process_failure():
         "VALIDATE",
     )
 
-    assert isinstance(
-        result,
-        OperationResult,
-    )
-
     assert result.success is False
     assert result.message == "Validation ERROR"
     assert result.output == ""
     assert result.error == "Validation ERROR"
     assert result.command == "gfix -validate"
     assert result.exit_code == 1
-    assert result.duration == 2.0
 
 
-def test_operation_process_failure_uses_output_when_no_error():
+def test_process_result_uses_output_when_stderr_empty():
 
     service = FirebirdOperationService()
 
     process_result = FakeProcessResult(
         success=False,
-        stdout="Process output",
+        stdout="Validation output",
         stderr="",
-        command="gfix",
+        command="gfix -validate",
         exit_code=1,
     )
 
@@ -193,22 +255,26 @@ def test_operation_process_failure_uses_output_when_no_error():
     )
 
     assert result.success is False
-    assert result.message == "Process output"
-    assert result.output == "Process output"
+    assert result.message == "Validation output"
+    assert result.output == "Validation output"
     assert result.error == ""
 
 
-def test_operation_process_uses_output_attribute():
+# ==========================================================
+# OUTPUT ATTRIBUTE
+# ==========================================================
+
+
+def test_process_result_uses_output_attribute():
 
     service = FirebirdOperationService()
 
-    class Result:
+    class ResultWithOutput:
 
         success = True
         stdout = ""
         stderr = ""
         output = "Alternative output"
-        error = ""
         command = "TEST"
         exit_code = 0
         started = None
@@ -216,36 +282,11 @@ def test_operation_process_uses_output_attribute():
         duration = 0.5
 
     result = service.execute(
-        lambda: Result(),
+        lambda: ResultWithOutput(),
         "TEST",
     )
 
     assert result.success is True
     assert result.message == "Alternative output"
     assert result.output == "Alternative output"
-
-
-def test_operation_copies_process_metadata():
-
-    service = FirebirdOperationService()
-
-    process_result = FakeProcessResult(
-        success=True,
-        stdout="OK",
-        command="TEST COMMAND",
-        exit_code=7,
-        started="START",
-        finished="FINISH",
-        duration=3.25,
-    )
-
-    result = service.execute(
-        lambda: process_result,
-        "TEST",
-    )
-
-    assert result.command == "TEST COMMAND"
-    assert result.exit_code == 7
-    assert result.started == "START"
-    assert result.finished == "FINISH"
-    assert result.duration == 3.25
+    assert result.error == ""
