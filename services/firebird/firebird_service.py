@@ -22,7 +22,6 @@ class FirebirdService:
 
         self.installation = InstallationService()
         self.database = DatabaseService()
-        self.statistics = StatisticsService()
         self.service = ServiceService()
 
     # ==================================================
