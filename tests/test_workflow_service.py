@@ -517,3 +517,252 @@ def test_workflow_has_no_error_after_success():
     assert result.success is True
     assert result.has_error is False
     assert result.error == ""
+    # ==========================================================
+# TEST 8 — WŁAŚCIWA KOLEJNOŚĆ OPERACJI
+# ==========================================================
+
+
+def test_workflow_execution_order():
+
+    calls = []
+
+    class OrderedStatisticsService:
+
+        def statistics(self):
+
+            calls.append("statistics")
+
+            return FakeStatistics()
+
+
+    class OrderedDiagnosticsService:
+
+        def analyze(self, stats):
+
+            calls.append("diagnostics")
+
+            return DiagnosticResult(
+                status="success",
+                message="OK",
+                transaction_gap=0,
+                active_gap=0,
+                snapshot_gap=0,
+                no_reserve_warning=False,
+            )
+
+
+    class OrderedBackupService:
+
+        def backup(self, destination):
+
+            calls.append("backup")
+
+            return (
+                True,
+                "Backup OK",
+            )
+
+
+    class OrderedRecommendationService:
+
+        def recommend(self, diagnostic):
+
+            calls.append("recommendations")
+
+            return RecommendationResult(
+                recommendations=[
+                    "Brak dodatkowych rekomendacji."
+                ]
+            )
+
+
+    workflow = WorkflowService(
+        statistics_service=OrderedStatisticsService(),
+        diagnostics_service=OrderedDiagnosticsService(),
+        recommendation_service=OrderedRecommendationService(),
+        backup_service=OrderedBackupService(),
+    )
+
+    result = workflow.run(
+        "C:/backup/test.fbk"
+    )
+
+    assert result.success is True
+
+    assert calls == [
+        "statistics",
+        "diagnostics",
+        "backup",
+        "statistics",
+        "diagnostics",
+        "recommendations",
+    ]
+
+
+# ==========================================================
+# TEST 9 — BACKUP NIE MOŻE WYKONAĆ PONOWNEJ DIAGNOSTYKI
+# ==========================================================
+
+
+def test_workflow_stops_after_backup_failure():
+
+    statistics_service = FakeStatisticsService()
+
+    backup_service = FakeBackupService(
+        success=False
+    )
+
+    workflow = WorkflowService(
+        statistics_service=statistics_service,
+        diagnostics_service=FakeDiagnosticsService(),
+        recommendation_service=FakeRecommendationService(),
+        backup_service=backup_service,
+    )
+
+    result = workflow.run(
+        "C:/backup/test.fbk"
+    )
+
+    assert result.success is False
+
+    assert statistics_service.calls == 1
+
+    assert backup_service.calls == 1
+
+    assert result.final_diagnostic is None
+
+    assert result.recommendations is None
+
+
+# ==========================================================
+# TEST 10 — BRAK REKOMENDACJI NIE JEST BŁĘDEM WORKFLOW
+# ==========================================================
+
+
+def test_workflow_empty_recommendations_are_success():
+
+    class EmptyRecommendationService:
+
+        def recommend(self, diagnostic):
+
+            return RecommendationResult(
+                recommendations=[]
+            )
+
+    workflow = WorkflowService(
+        statistics_service=FakeStatisticsService(),
+        diagnostics_service=FakeDiagnosticsService(),
+        recommendation_service=EmptyRecommendationService(),
+        backup_service=FakeBackupService(),
+    )
+
+    result = workflow.run(
+        "C:/backup/test.fbk"
+    )
+
+    assert result.success is True
+    assert result.error == ""
+
+    assert result.recommendations is not None
+
+    assert (
+        result.recommendations.recommendations
+        == []
+    )
+
+    assert result.has_recommendations is False
+
+
+# ==========================================================
+# TEST 11 — HAS_ERROR
+# ==========================================================
+
+
+def test_workflow_has_error_when_failed():
+
+    workflow = WorkflowService(
+        statistics_service=FakeStatisticsService(
+            fail=True
+        ),
+        diagnostics_service=FakeDiagnosticsService(),
+        recommendation_service=FakeRecommendationService(),
+        backup_service=FakeBackupService(),
+    )
+
+    result = workflow.run(
+        "C:/backup/test.fbk"
+    )
+
+    assert result.success is False
+    assert result.has_error is True
+    assert result.error != ""
+
+
+# ==========================================================
+# TEST 12 — BACKUP ZAPISUJE ŚCIEŻKĘ
+# ==========================================================
+
+
+def test_workflow_stores_backup_path():
+
+    backup_path = (
+        "C:/KSBAZA/KS-APW/WAPTEKA_TEST.fbk"
+    )
+
+    workflow = WorkflowService(
+        statistics_service=FakeStatisticsService(),
+        diagnostics_service=FakeDiagnosticsService(),
+        recommendation_service=FakeRecommendationService(),
+        backup_service=FakeBackupService(),
+    )
+
+    result = workflow.run(
+        backup_path
+    )
+
+    assert result.success is True
+
+    assert (
+        result.backup_file
+        == backup_path
+    )
+
+
+# ==========================================================
+# TEST 13 — DIAGNOSTYKA JEST PRZEKAZYWANA DO REKOMENDACJI
+# ==========================================================
+
+
+def test_workflow_passes_final_diagnostic_to_recommendations():
+
+    captured = {}
+
+    class CapturingRecommendationService:
+
+        def recommend(self, diagnostic):
+
+            captured["diagnostic"] = diagnostic
+
+            return RecommendationResult(
+                recommendations=[
+                    "OK"
+                ]
+            )
+
+    workflow = WorkflowService(
+        statistics_service=FakeStatisticsService(),
+        diagnostics_service=FakeDiagnosticsService(),
+        recommendation_service=CapturingRecommendationService(),
+        backup_service=FakeBackupService(),
+    )
+
+    result = workflow.run(
+        "C:/backup/test.fbk"
+    )
+
+    assert result.success is True
+
+    assert (
+        captured["diagnostic"]
+        is result.final_diagnostic
+    )
