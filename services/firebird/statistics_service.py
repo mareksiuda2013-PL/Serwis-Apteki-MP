@@ -7,6 +7,9 @@ from models import DatabaseStatistics
 from services.firebird.base_firebird_service import (
     BaseFirebirdService,
 )
+from services.firebird.statistics_parser import (
+    StatisticsParser,
+)
 
 
 class StatisticsService(BaseFirebirdService):
@@ -21,11 +24,18 @@ class StatisticsService(BaseFirebirdService):
         )
 
         if self.installation.gstat is None:
+
             raise RuntimeError(
                 "Nie znaleziono gstat.exe."
             )
 
         self.gstat = self.installation.gstat
+
+        self.parser = StatisticsParser()
+
+    # ==================================================
+    # GSTAT HEADER
+    # ==================================================
 
     def header(self):
 
@@ -44,6 +54,10 @@ class StatisticsService(BaseFirebirdService):
             operation="GSTAT",
         )
 
+    # ==================================================
+    # STATISTICS
+    # ==================================================
+
     def statistics(
         self,
     ) -> DatabaseStatistics:
@@ -55,95 +69,9 @@ class StatisticsService(BaseFirebirdService):
             raise RuntimeError(
                 result.stderr
                 or result.stdout
+                or "GSTAT zakończył się błędem."
             )
 
-        stats = DatabaseStatistics()
-
-        for raw_line in result.stdout.splitlines():
-
-            line = raw_line.strip()
-
-            if line.startswith("Page size"):
-
-                stats.page_size = int(
-                    line.split()[-1]
-                )
-
-            elif line.startswith("ODS version"):
-
-                stats.ods = line.split()[-1]
-
-            elif line.startswith("Sweep interval"):
-
-                stats.sweep_interval = int(
-                    line.split()[-1]
-                )
-
-            elif line.startswith("Page buffers"):
-
-                stats.page_buffers = int(
-                    line.split()[-1]
-                )
-
-            elif line.startswith("Next transaction"):
-
-                stats.next_transaction = int(
-                    line.split()[-1]
-                )
-
-            elif line.startswith("Oldest transaction"):
-
-                stats.oldest_transaction = int(
-                    line.split()[-1]
-                )
-
-            elif line.startswith("Oldest active"):
-
-                stats.oldest_active = int(
-                    line.split()[-1]
-                )
-
-            elif line.startswith("Oldest snapshot"):
-
-                stats.oldest_snapshot = int(
-                    line.split()[-1]
-                )
-
-            elif line.startswith("Database dialect"):
-
-                stats.database_dialect = int(
-                    line.split()[-1]
-                )
-
-            elif line.startswith("Generation"):
-
-                stats.generation = int(
-                    line.split()[-1]
-                )
-
-            elif line.startswith("Creation date"):
-
-                stats.creation_date = (
-                    line
-                    .split(
-                        "Creation date",
-                        1,
-                    )[1]
-                    .strip()
-                )
-
-            elif line.startswith("Attributes"):
-
-                attributes = line.upper()
-
-                stats.forced_writes = (
-                    "FORCE WRITE"
-                    in attributes
-                )
-
-                stats.no_reserve = (
-                    "NO RESERVE"
-                    in attributes
-                )
-
-        return stats
+        return self.parser.parse(
+            result.stdout
+        )
