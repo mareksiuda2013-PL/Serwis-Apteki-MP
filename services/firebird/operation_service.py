@@ -1,9 +1,24 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any, Callable
 
 from core.logger import logger
 from models.operation_result import OperationResult
+
+
+@dataclass(slots=True)
+class OperationExecutionResult:
+    """
+    Wewnętrzny wynik wykonania operacji.
+
+    Klasa pozostaje kompatybilna z istniejącym
+    mechanizmem FirebirdOperationService.
+    """
+
+    success: bool
+    message: str = ""
+    result: Any = None
 
 
 class FirebirdOperationService:
@@ -15,10 +30,7 @@ class FirebirdOperationService:
         - wykonanie funkcji serwisowej,
         - obsługę wyjątków,
         - logowanie,
-        - zwrócenie jednolitego OperationResult.
-
-    OperationResult jest wspólnym modelem
-    używanym w całej warstwie operacji Firebird.
+        - normalizację wyniku do OperationResult.
     """
 
     def execute(
@@ -32,7 +44,6 @@ class FirebirdOperationService:
         )
 
         try:
-
             result = operation()
 
         except Exception as exc:
@@ -48,7 +59,30 @@ class FirebirdOperationService:
             )
 
         # ==================================================
-        # WYNIK (bool, message)
+        # WYNIK JUŻ BĘDĄCY OperationResult
+        # ==================================================
+
+        if isinstance(
+            result,
+            OperationResult,
+        ):
+
+            if result.success:
+
+                logger.info(
+                    f"Operacja zakończona pomyślnie: {name}"
+                )
+
+            else:
+
+                logger.error(
+                    f"Operacja zakończona błędem: {name}"
+                )
+
+            return result
+
+        # ==================================================
+        # TUPLE: (bool, message)
         # ==================================================
 
         if (
@@ -58,6 +92,8 @@ class FirebirdOperationService:
         ):
 
             success, message = result
+
+            success = bool(success)
 
             message = str(
                 message or ""
@@ -78,15 +114,22 @@ class FirebirdOperationService:
             return OperationResult(
                 success=success,
                 message=message,
-                output=message if success else "",
-                error=message if not success else "",
+                output=message
+                if success
+                else "",
+                error=message
+                if not success
+                else "",
             )
 
         # ==================================================
-        # WYNIK POSIADAJĄCY .success
+        # OBIEKT Z .SUCCESS
         # ==================================================
 
-        if hasattr(result, "success"):
+        if hasattr(
+            result,
+            "success",
+        ):
 
             success = bool(
                 getattr(
