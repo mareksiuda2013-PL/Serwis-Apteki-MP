@@ -153,9 +153,27 @@ class FirebirdController:
     # HEALTH CHECK
     # ======================================================
 
-    def health(self):
+    def health(
+        self,
+        stats=None,
+    ):
+        """
+        Wykonuje kontrolę zdrowia bazy.
 
-        return self.health_service.check()
+        Jeżeli statystyki zostały przekazane,
+        przekazuje je do HealthService.
+
+        Jeżeli statystyk nie przekazano,
+        HealthService pobiera je samodzielnie.
+        """
+
+        if stats is None:
+
+            return self.health_service.check()
+
+        return self.health_service.check(
+            stats
+        )
 
     # ======================================================
     # RAPORT
@@ -170,23 +188,42 @@ class FirebirdController:
         """
         Generuje kompletny raport aktualnej bazy.
 
-        Jeżeli dane nie zostały przekazane,
-        kontroler pobiera je automatycznie.
+        Statystyki są pobierane tylko raz
+        i przekazywane dalej do HealthService
+        oraz DiagnosticsService.
         """
 
         database = self.database()
 
+        # --------------------------------------------------
+        # STATYSTYKI
+        # --------------------------------------------------
+
         statistics = self.statistics()
+
+        # --------------------------------------------------
+        # HEALTH
+        # --------------------------------------------------
 
         if health is None:
 
-            health = self.health()
+            health = self.health(
+                statistics
+            )
+
+        # --------------------------------------------------
+        # DIAGNOSTYKA
+        # --------------------------------------------------
 
         if diagnostic is None:
 
             diagnostic = self.diagnostics(
                 statistics
             )
+
+        # --------------------------------------------------
+        # REKOMENDACJE
+        # --------------------------------------------------
 
         if recommendations is None:
 
@@ -195,6 +232,10 @@ class FirebirdController:
                     diagnostic
                 )
             )
+
+        # --------------------------------------------------
+        # RAPORT
+        # --------------------------------------------------
 
         return self.report_service.generate(
             database=database,

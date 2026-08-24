@@ -558,3 +558,185 @@ def test_workflow_report_calls_report_service():
     )
 
     assert result is expected
+    # ==========================================================
+# HEALTH — PROVIDED STATISTICS
+# ==========================================================
+
+
+
+    (
+        controller,
+        _,
+        _,
+        health,
+        _,
+        _,
+        _,
+        _,
+    ) = create_controller()
+
+    stats = MagicMock()
+    expected = MagicMock()
+
+    health.check.return_value = expected
+
+    result = controller.health(
+        stats
+    )
+
+    health.check.assert_called_once_with(
+        stats
+    )
+
+    assert result is expected
+
+
+# ==========================================================
+# DIAGNOSTICS — PROVIDED STATISTICS
+# ==========================================================
+
+
+def test_diagnostics_uses_provided_statistics():
+
+    (
+        controller,
+        _,
+        _,
+        _,
+        diagnostics,
+        _,
+        _,
+        _,
+    ) = create_controller()
+
+    stats = MagicMock()
+    expected = MagicMock()
+
+    diagnostics.analyze.return_value = expected
+
+    result = controller.diagnostics(
+        stats
+    )
+
+    diagnostics.analyze.assert_called_once_with(
+        stats
+    )
+
+    assert result is expected
+
+
+# ==========================================================
+# REPORT — HEALTH / DIAGNOSTICS / RECOMMENDATIONS
+# ==========================================================
+
+
+def test_report_builds_missing_data_from_statistics():
+
+    (
+        controller,
+        _,
+        _,
+        health,
+        diagnostics,
+        recommendations,
+        report_service,
+        _,
+    ) = create_controller()
+
+    database = r"C:\test\database.fdb"
+
+    stats = MagicMock()
+    health_result = MagicMock()
+    diagnostic_result = MagicMock()
+    recommendation_result = MagicMock()
+    expected_report = MagicMock()
+
+    health.check.return_value = health_result
+
+    diagnostics.analyze.return_value = (
+        diagnostic_result
+    )
+
+    recommendations.recommend.return_value = (
+        recommendation_result
+    )
+
+    report_service.generate.return_value = (
+        expected_report
+    )
+
+    with patch.object(
+        controller,
+        "database",
+        return_value=database,
+    ), patch.object(
+        controller,
+        "statistics",
+        return_value=stats,
+    ):
+
+        result = controller.report()
+
+    health.check.assert_called_once_with(
+        stats
+    )
+
+    diagnostics.analyze.assert_called_once_with(
+        stats
+    )
+
+    recommendations.recommend.assert_called_once_with(
+        diagnostic_result
+    )
+
+    report_service.generate.assert_called_once_with(
+        database=database,
+        statistics=stats,
+        health=health_result,
+        recommendations=recommendation_result,
+    )
+
+    assert result is expected_report
+
+
+# ==========================================================
+# WORKFLOW REPORT — DATABASE
+# ==========================================================
+
+
+def test_workflow_report_uses_configured_database():
+
+    (
+        controller,
+        firebird,
+        _,
+        _,
+        _,
+        _,
+        report_service,
+        _,
+    ) = create_controller()
+
+    database = (
+        r"C:\KSBAZA\KS-APW\WAPTEKA.FDB"
+    )
+
+    workflow = MagicMock()
+    expected = MagicMock()
+
+    firebird.cfg.database = database
+
+    report_service.generate_workflow_report.return_value = (
+        expected
+    )
+
+    result = controller.workflow_report(
+        workflow
+    )
+
+    report_service.generate_workflow_report.assert_called_once_with(
+        database=database,
+        workflow=workflow,
+    )
+
+    assert result is expected
