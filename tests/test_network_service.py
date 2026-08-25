@@ -31,10 +31,12 @@ class NetworkService:
         try:
 
             interfaces = psutil.net_if_addrs()
+
             stats = psutil.net_if_stats()
 
             for interface_name, addresses in interfaces.items():
 
+                # pomijamy interfejsy wyłączone
                 if interface_name in stats:
 
                     if not stats[interface_name].isup:
@@ -47,9 +49,11 @@ class NetworkService:
 
                     ip = address.address
 
+                    # pomijamy localhost
                     if ip.startswith("127."):
                         continue
 
+                    # pierwsze znalezione IPv4
                     info.local_ip = ip
                     break
 
