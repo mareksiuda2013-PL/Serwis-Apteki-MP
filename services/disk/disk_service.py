@@ -1,16 +1,8 @@
 from __future__ import annotations
 
 import shutil
-from dataclasses import dataclass
 
-
-@dataclass(slots=True)
-class DiskInfo:
-    drive: str
-    total_gb: float
-    used_gb: float
-    free_gb: float
-    percent: int
+from models.disk_info import DiskInfo
 
 
 class DiskService:
@@ -24,18 +16,31 @@ class DiskService:
             drive = f"{letter}:\\"
 
             try:
-                total, used, free = shutil.disk_usage(drive)
+
+                total, used, free = (
+                    shutil.disk_usage(drive)
+                )
 
             except OSError:
+
                 continue
 
-            total_gb = total / (1024 ** 3)
-            used_gb = used / (1024 ** 3)
-            free_gb = free / (1024 ** 3)
+            total_gb = (
+                total / (1024 ** 3)
+            )
+
+            used_gb = (
+                used / (1024 ** 3)
+            )
+
+            free_gb = (
+                free / (1024 ** 3)
+            )
 
             percent = 0
 
             if total > 0:
+
                 percent = int(
                     (used / total) * 100
                 )

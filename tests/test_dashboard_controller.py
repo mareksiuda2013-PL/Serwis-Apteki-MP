@@ -7,41 +7,88 @@ from modules.dashboard.controller import (
 )
 
 
-def test_system_info_returns_service_result():
+def test_system_info():
 
-    expected = MagicMock(
-        computer_name="TEST-PC",
-        user="TEST",
-    )
+    system_info = MagicMock()
 
     with patch(
         "modules.dashboard.controller.SystemService"
     ) as service_class:
 
-        service = service_class.return_value
-        service.get_info.return_value = expected
+        service_class.return_value.get_info.return_value = (
+            system_info
+        )
 
         controller = DashboardController()
 
         result = controller.system_info()
 
-    assert result is expected
+    assert result is system_info
 
-    service_class.assert_called_once_with()
-    service.get_info.assert_called_once_with()
+    service_class.return_value.get_info.assert_called_once()
 
 
-def test_controller_creates_system_service():
+def test_firebird_info():
+
+    firebird_info = MagicMock()
 
     with patch(
-        "modules.dashboard.controller.SystemService"
+        "modules.dashboard.controller.FirebirdService"
     ) as service_class:
+
+        service_class.return_value.get_info.return_value = (
+            firebird_info
+        )
 
         controller = DashboardController()
 
-    service_class.assert_called_once_with()
+        result = controller.firebird_info()
 
-    assert (
-        controller.system_service
-        is service_class.return_value
-    )
+    assert result is firebird_info
+
+    service_class.return_value.get_info.assert_called_once()
+
+
+def test_disk_info():
+
+    disks = [
+        MagicMock(),
+        MagicMock(),
+    ]
+
+    with patch(
+        "modules.dashboard.controller.DiskService"
+    ) as service_class:
+
+        service_class.return_value.get_disks.return_value = (
+            disks
+        )
+
+        controller = DashboardController()
+
+        result = controller.disk_info()
+
+    assert result is disks
+
+    service_class.return_value.get_disks.assert_called_once()
+
+
+def test_network_info():
+
+    network_info = MagicMock()
+
+    with patch(
+        "modules.dashboard.controller.NetworkService"
+    ) as service_class:
+
+        service_class.return_value.get_info.return_value = (
+            network_info
+        )
+
+        controller = DashboardController()
+
+        result = controller.network_info()
+
+    assert result is network_info
+
+    service_class.return_value.get_info.assert_called_once()
