@@ -2,17 +2,10 @@ from __future__ import annotations
 
 import socket
 import subprocess
-from dataclasses import dataclass
 
 import psutil
 
-
-@dataclass(slots=True)
-class NetworkInfo:
-
-    local_ip: str = ""
-    gateway: str = ""
-    internet: bool = False
+from models.network_info import NetworkInfo
 
 
 class NetworkService:
