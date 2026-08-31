@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -357,7 +357,9 @@ def test_restore_builds_correct_command(
     service.runner.run.assert_called_once()
 
     command = (
-        service.runner.run.call_args.args[0]
+        service.runner
+        .run
+        .call_args.args[0]
     )
 
     assert command == [
@@ -405,7 +407,9 @@ def test_restore_without_replace_does_not_add_rep(
     )
 
     command = (
-        service.runner.run.call_args.args[0]
+        service.runner
+        .run
+        .call_args.args[0]
     )
 
     assert "-rep" not in command
@@ -446,7 +450,9 @@ def test_restore_uses_correct_runner_options(
     )
 
     kwargs = (
-        service.runner.run.call_args.kwargs
+        service.runner
+        .run
+        .call_args.kwargs
     )
 
     assert kwargs["timeout"] == 1800
@@ -486,7 +492,37 @@ def test_restore_propagates_runner_exception(
         RuntimeError,
         match="ProcessRunner ERROR",
     ):
+
         service.restore(
             backup_file,
             database_file,
         )
+
+
+# ==========================================================
+# INITIALIZATION
+# ==========================================================
+
+
+def test_restore_raises_when_gbak_is_missing():
+
+    with patch(
+        "services.firebird.restore_service.BaseFirebirdService.__init__",
+        return_value=None,
+    ):
+
+        service = RestoreService.__new__(
+            RestoreService
+        )
+
+        service.installation = MagicMock()
+        service.installation.gbak = None
+
+        with pytest.raises(
+            RuntimeError,
+            match="Nie znaleziono gbak.exe.",
+        ):
+
+            RestoreService.__init__(
+                service
+            )

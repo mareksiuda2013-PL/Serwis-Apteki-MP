@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from services.firebird.backup_service import BackupService
 
@@ -46,7 +46,9 @@ def test_backup_success(tmp_path):
 
     service.runner.run.return_value = expected
 
-    destination = tmp_path / "backup.fbk"
+    destination = (
+        tmp_path / "backup.fbk"
+    )
 
     result = service.backup(
         destination
@@ -75,7 +77,9 @@ def test_backup_failure(tmp_path):
 
     service.runner.run.return_value = expected
 
-    destination = tmp_path / "backup.fbk"
+    destination = (
+        tmp_path / "backup.fbk"
+    )
 
     result = service.backup(
         destination
@@ -295,3 +299,41 @@ def test_backup_propagates_runner_exception(
         raise AssertionError(
             "Expected RuntimeError"
         )
+
+
+# ==========================================================
+# INITIALIZATION
+# ==========================================================
+
+
+def test_backup_raises_when_gbak_is_missing():
+
+    with patch(
+        "services.firebird.backup_service.BaseFirebirdService.__init__",
+        return_value=None,
+    ):
+
+        service = BackupService.__new__(
+            BackupService
+        )
+
+        service.installation = MagicMock()
+        service.installation.gbak = None
+
+        try:
+
+            BackupService.__init__(
+                service
+            )
+
+        except RuntimeError as exc:
+
+            assert str(exc) == (
+                "Nie znaleziono gbak.exe."
+            )
+
+        else:
+
+            raise AssertionError(
+                "Expected RuntimeError"
+            )
