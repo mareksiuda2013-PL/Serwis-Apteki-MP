@@ -19,14 +19,31 @@ class FirebirdInstallation:
 
 class InstallationService:
 
-    def first_installation(self) -> FirebirdInstallation | None:
+    DEFAULT_ROOTS = (
+        Path(r"C:\Program Files\Firebird"),
+        Path(r"C:\Program Files (x86)\Firebird"),
+    )
 
-        roots = [
-            Path(r"C:\Program Files\Firebird"),
-            Path(r"C:\Program Files (x86)\Firebird"),
-        ]
+    def __init__(
+        self,
+        roots: tuple[Path, ...] | None = None,
+    ) -> None:
 
-        for root in roots:
+        self.roots = (
+            roots
+            if roots is not None
+            else self.DEFAULT_ROOTS
+        )
+
+    # ==================================================
+    # FIRST INSTALLATION
+    # ==================================================
+
+    def first_installation(
+        self,
+    ) -> FirebirdInstallation | None:
+
+        for root in self.roots:
 
             if not root.exists():
                 continue
@@ -36,33 +53,75 @@ class InstallationService:
                 if not folder.is_dir():
                     continue
 
-                if not folder.name.lower().startswith("firebird"):
+                if not folder.name.lower().startswith(
+                    "firebird"
+                ):
                     continue
 
-                fb = FirebirdInstallation(
+                installation = FirebirdInstallation(
                     install_path=folder,
                     version=folder.name,
                 )
 
-                fb.fbclient = self.find(folder, "fbclient.dll")
-                fb.isql = self.find(folder, "isql", "isql.exe", "isql.com")
-                fb.gbak = self.find(folder, "gbak", "gbak.exe")
-                fb.gfix = self.find(folder, "gfix", "gfix.exe")
-                fb.gstat = self.find(folder, "gstat", "gstat.exe")
-                fb.firebird_conf = self.find(folder, "firebird.conf")
+                installation.fbclient = self.find(
+                    folder,
+                    "fbclient.dll",
+                )
 
-                return fb
+                installation.isql = self.find(
+                    folder,
+                    "isql",
+                    "isql.exe",
+                    "isql.com",
+                )
+
+                installation.gbak = self.find(
+                    folder,
+                    "gbak",
+                    "gbak.exe",
+                )
+
+                installation.gfix = self.find(
+                    folder,
+                    "gfix",
+                    "gfix.exe",
+                )
+
+                installation.gstat = self.find(
+                    folder,
+                    "gstat",
+                    "gstat.exe",
+                )
+
+                installation.firebird_conf = self.find(
+                    folder,
+                    "firebird.conf",
+                )
+
+                return installation
 
         return None
 
-    def find(self, root: Path, *names: str) -> Path | None:
+    # ==================================================
+    # FIND
+    # ==================================================
 
-        wanted = {name.lower() for name in names}
+    def find(
+        self,
+        root: Path,
+        *names: str,
+    ) -> Path | None:
+
+        wanted = {
+            name.lower()
+            for name in names
+        }
 
         for file in root.rglob("*"):
 
-            if file.name.lower() in wanted:
+            if file.is_file() and (
+                file.name.lower() in wanted
+            ):
                 return file
 
         return None
-
