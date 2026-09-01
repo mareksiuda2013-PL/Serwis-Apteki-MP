@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from models.database_health import (
     DatabaseHealth,
@@ -61,6 +61,26 @@ def create_stats(
     stats.no_reserve = no_reserve
 
     return stats
+
+
+# ==========================================================
+# INITIALIZATION
+# ==========================================================
+
+
+def test_init_creates_statistics_service():
+
+    with patch(
+        "services.firebird.health_service.StatisticsService"
+    ) as statistics_cls:
+
+        service = HealthService()
+
+    statistics_cls.assert_called_once_with()
+
+    assert service.statistics_service is (
+        statistics_cls.return_value
+    )
 
 
 # ==========================================================
@@ -137,6 +157,11 @@ def test_check_returns_error_when_statistics_fail():
 
     check = result.checks[0]
 
+    assert isinstance(
+        check,
+        HealthCheck,
+    )
+
     assert check.name == "Połączenie"
     assert check.status == "ERROR"
     assert check.value == "-"
@@ -194,6 +219,29 @@ def test_ods_missing():
     )
 
 
+def test_ods_none_is_treated_as_missing():
+
+    service = create_service()
+
+    stats = create_stats(
+        ods=None
+    )
+
+    result = service.check(stats)
+
+    check = next(
+        check
+        for check in result.checks
+        if check.name == "ODS"
+    )
+
+    assert check.status == "WARNING"
+    assert check.value == "-"
+    assert check.message == (
+        "Brak informacji o ODS."
+    )
+
+
 # ==========================================================
 # PAGE SIZE
 # ==========================================================
@@ -230,6 +278,9 @@ def test_page_size_valid():
         assert check.value == str(
             page_size
         )
+        assert check.message == (
+            "Prawidłowy rozmiar strony."
+        )
 
 
 def test_page_size_invalid():
@@ -253,6 +304,26 @@ def test_page_size_invalid():
     assert check.message == (
         "Nietypowy rozmiar strony."
     )
+
+
+def test_page_size_zero_is_warning():
+
+    service = create_service()
+
+    stats = create_stats(
+        page_size=0
+    )
+
+    result = service.check(stats)
+
+    check = next(
+        check
+        for check in result.checks
+        if check.name == "Page Size"
+    )
+
+    assert check.status == "WARNING"
+    assert check.value == "0"
 
 
 # ==========================================================
@@ -362,6 +433,9 @@ def test_transactions_normal():
 
     assert active_check.status == "OK"
     assert active_check.value == "150"
+    assert active_check.message == (
+        "Aktywna transakcja mieści się w zakresie."
+    )
 
 
 def test_transactions_large_difference():
@@ -384,6 +458,32 @@ def test_transactions_large_difference():
 
     assert check.status == "WARNING"
     assert check.value == "1000000"
+    assert check.message == (
+        "Duża różnica pomiędzy "
+        "Next Transaction i Oldest Transaction."
+    )
+
+
+def test_transactions_below_warning_threshold():
+
+    service = create_service()
+
+    stats = create_stats(
+        oldest_transaction=100,
+        oldest_active=150,
+        next_transaction=1_000_099,
+    )
+
+    result = service.check(stats)
+
+    check = next(
+        check
+        for check in result.checks
+        if check.name == "Transakcje"
+    )
+
+    assert check.status == "OK"
+    assert check.value == "999999"
 
 
 def test_transactions_missing():
@@ -414,6 +514,26 @@ def test_transactions_missing():
     )
 
 
+def test_transactions_negative_next_transaction():
+
+    service = create_service()
+
+    stats = create_stats(
+        next_transaction=-1
+    )
+
+    result = service.check(stats)
+
+    check = next(
+        check
+        for check in result.checks
+        if check.name == "Transakcje"
+    )
+
+    assert check.status == "WARNING"
+    assert check.value == "-"
+
+
 def test_oldest_active_warning():
 
     service = create_service()
@@ -437,6 +557,27 @@ def test_oldest_active_warning():
     assert check.message == (
         "Oldest Active wymaga sprawdzenia."
     )
+
+
+def test_oldest_active_equal_to_oldest_is_warning():
+
+    service = create_service()
+
+    stats = create_stats(
+        oldest_transaction=100,
+        oldest_active=100,
+        next_transaction=200,
+    )
+
+    result = service.check(stats)
+
+    check = next(
+        check
+        for check in result.checks
+        if check.name == "Oldest Active"
+    )
+
+    assert check.status == "WARNING"
 
 
 # ==========================================================
@@ -542,7 +683,7 @@ def test_no_reserve_disabled():
 
 
 # ==========================================================
-# FINAL STATUS — OK
+# FINAL STATUS
 # ==========================================================
 
 
@@ -570,11 +711,6 @@ def test_final_status_ok():
     )
 
 
-# ==========================================================
-# FINAL STATUS — WARNING
-# ==========================================================
-
-
 def test_final_status_warning():
 
     service = create_service()
@@ -599,28 +735,26 @@ def test_final_status_warning():
     )
 
 
-# ==========================================================
-# FINAL STATUS — ERROR
-# ==========================================================
-
-
 def test_final_status_error():
 
     service = create_service()
 
-    service.statistics_service.statistics.side_effect = (
-        RuntimeError(
-            "Database unavailable"
+    health = DatabaseHealth()
+
+    health.checks.append(
+        HealthCheck(
+            name="TEST",
+            status="ERROR",
+            value="-",
+            message="ERROR",
         )
     )
 
-    result = service.check()
+    service._calculate_status(health)
 
-    assert result.status == "ERROR"
-
-    assert result.summary == (
-        "Nie udało się pobrać "
-        "statystyk bazy."
+    assert health.status == "ERROR"
+    assert health.summary == (
+        "Wykryto 1 problemów."
     )
 
 
@@ -668,3 +802,32 @@ def test_all_checks_are_health_checks():
         )
         for check in result.checks
     )
+
+
+# ==========================================================
+# CHECK NAMES
+# ==========================================================
+
+
+def test_check_contains_expected_names():
+
+    service = create_service()
+
+    stats = create_stats()
+
+    result = service.check(stats)
+
+    names = [
+        check.name
+        for check in result.checks
+    ]
+
+    assert names == [
+        "ODS",
+        "Page Size",
+        "Sweep Interval",
+        "Transakcje",
+        "Oldest Active",
+        "Force Write",
+        "No Reserve",
+    ]
