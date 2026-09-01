@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from services.firebird.sweep_service import SweepService
 
@@ -213,18 +215,129 @@ def test_sweep_propagates_runner_exception():
         )
     )
 
-    try:
+    with pytest.raises(
+        RuntimeError,
+        match="ProcessRunner ERROR",
+    ):
 
         service.sweep()
 
-    except RuntimeError as exc:
 
-        assert str(exc) == (
-            "ProcessRunner ERROR"
+# ==========================================================
+# INITIALIZATION
+# ==========================================================
+
+
+def test_sweep_raises_when_firebird_installation_is_missing():
+
+    with patch(
+        "services.firebird.sweep_service.InstallationService"
+    ) as installation_cls:
+
+        installation_cls.return_value.first_installation.return_value = (
+            None
         )
 
-    else:
+        with pytest.raises(
+            RuntimeError,
+            match="Nie znaleziono Firebird",
+        ):
 
-        raise AssertionError(
-            "Expected RuntimeError"
+            SweepService()
+
+
+def test_sweep_raises_when_gfix_is_missing():
+
+    installation = MagicMock()
+    installation.gfix = None
+
+    with patch(
+        "services.firebird.sweep_service.InstallationService"
+    ) as installation_cls:
+
+        installation_cls.return_value.first_installation.return_value = (
+            installation
         )
+
+        with pytest.raises(
+            RuntimeError,
+            match="Nie znaleziono gfix.exe",
+        ):
+
+            SweepService()
+
+
+def test_sweep_uses_provided_database():
+
+    database = Path(
+        r"C:\test\database.fdb"
+    )
+
+    installation = MagicMock()
+    installation.gfix = Path(
+        r"C:\Firebird\gfix.exe"
+    )
+
+    with (
+        patch(
+            "services.firebird.sweep_service.InstallationService"
+        ) as installation_cls,
+        patch(
+            "services.firebird.sweep_service.Config"
+        ) as config_cls,
+        patch(
+            "services.firebird.sweep_service.ProcessRunner"
+        ),
+    ):
+
+        installation_cls.return_value.first_installation.return_value = (
+            installation
+        )
+
+        config_cls.return_value.database = (
+            r"C:\configured\database.fdb"
+        )
+
+        service = SweepService(
+            database=database
+        )
+
+    assert service.database == database
+
+
+def test_sweep_uses_configured_database():
+
+    configured_database = (
+        r"C:\configured\database.fdb"
+    )
+
+    installation = MagicMock()
+    installation.gfix = Path(
+        r"C:\Firebird\gfix.exe"
+    )
+
+    with (
+        patch(
+            "services.firebird.sweep_service.InstallationService"
+        ) as installation_cls,
+        patch(
+            "services.firebird.sweep_service.Config"
+        ) as config_cls,
+        patch(
+            "services.firebird.sweep_service.ProcessRunner"
+        ),
+    ):
+
+        installation_cls.return_value.first_installation.return_value = (
+            installation
+        )
+
+        config_cls.return_value.database = (
+            configured_database
+        )
+
+        service = SweepService()
+
+    assert service.database == Path(
+        configured_database
+    )

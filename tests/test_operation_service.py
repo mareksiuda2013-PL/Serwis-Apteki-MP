@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from unittest.mock import patch
 
 from models.operation_result import OperationResult
 from services.firebird.operation_service import (
@@ -124,6 +125,29 @@ def test_operation_tuple_failure():
     assert result.message == "Backup ERROR"
     assert result.error == "Backup ERROR"
     assert result.output == ""
+
+
+def test_operation_tuple_empty_message():
+
+    service = FirebirdOperationService()
+
+    result = service.execute(
+        lambda: (
+            True,
+            "",
+        ),
+        "BACKUP",
+    )
+
+    assert isinstance(
+        result,
+        OperationResult,
+    )
+
+    assert result.success is True
+    assert result.message == ""
+    assert result.output == ""
+    assert result.error == ""
 
 
 # ==========================================================
@@ -290,3 +314,62 @@ def test_process_result_uses_output_attribute():
     assert result.message == "Alternative output"
     assert result.output == "Alternative output"
     assert result.error == ""
+
+
+# ==========================================================
+# LOGGING
+# ==========================================================
+
+
+def test_operation_logs_start_and_success():
+
+    service = FirebirdOperationService()
+
+    with patch(
+        "services.firebird.operation_service.logger"
+    ) as logger:
+
+        result = service.execute(
+            lambda: True,
+            "TEST",
+        )
+
+    assert result.success is True
+
+    logger.info.assert_any_call(
+        "Rozpoczęto operację: TEST"
+    )
+
+    logger.info.assert_any_call(
+        "Operacja zakończona pomyślnie: TEST"
+    )
+
+
+def test_operation_logs_start_and_error():
+
+    service = FirebirdOperationService()
+
+    def failing_operation():
+
+        raise RuntimeError(
+            "Testowy błąd"
+        )
+
+    with patch(
+        "services.firebird.operation_service.logger"
+    ) as logger:
+
+        result = service.execute(
+            failing_operation,
+            "TEST",
+        )
+
+    assert result.success is False
+
+    logger.info.assert_called_once_with(
+        "Rozpoczęto operację: TEST"
+    )
+
+    logger.error.assert_called_once_with(
+        "TEST ERROR: Testowy błąd"
+    )

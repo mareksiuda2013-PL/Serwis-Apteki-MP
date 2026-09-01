@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+
+import pytest
 
 from services.firebird.mend_service import MendService
 
@@ -30,6 +32,15 @@ def create_service():
     return service
 
 
+def create_successful_validation():
+
+    return MagicMock(
+        success=True,
+        stdout="VALIDATION OK",
+        stderr="",
+    )
+
+
 # ==========================================================
 # SERVICE DISCOVERY
 # ==========================================================
@@ -41,21 +52,12 @@ def test_mend_fails_when_firebird_service_not_found():
 
     service.service.find_firebird_service.return_value = None
 
-    try:
+    with pytest.raises(
+        RuntimeError,
+        match="Nie znaleziono usługi Firebird",
+    ):
 
         service.mend()
-
-    except RuntimeError as exc:
-
-        assert str(exc) == (
-            "Nie znaleziono usługi Firebird."
-        )
-
-    else:
-
-        raise AssertionError(
-            "Expected RuntimeError"
-        )
 
 
 # ==========================================================
@@ -75,19 +77,12 @@ def test_mend_fails_when_service_not_installed():
         "Not Installed"
     )
 
-    try:
+    with pytest.raises(
+        RuntimeError,
+        match="Usługa Firebird nie istnieje",
+    ):
 
         service.mend()
-
-    except RuntimeError as exc:
-
-        assert "Usługa Firebird nie istnieje" in str(exc)
-
-    else:
-
-        raise AssertionError(
-            "Expected RuntimeError"
-        )
 
 
 # ==========================================================
@@ -109,19 +104,12 @@ def test_mend_fails_when_service_cannot_be_stopped():
 
     service.service.stop.return_value = False
 
-    try:
+    with pytest.raises(
+        RuntimeError,
+        match="Nie udało się zatrzymać usługi Firebird",
+    ):
 
         service.mend()
-
-    except RuntimeError as exc:
-
-        assert "Nie udało się zatrzymać usługi Firebird" in str(exc)
-
-    else:
-
-        raise AssertionError(
-            "Expected RuntimeError"
-        )
 
 
 # ==========================================================
@@ -155,35 +143,15 @@ def test_mend_builds_correct_command():
         process_result
     )
 
-    # ValidateService jest tworzony wewnątrz mend().
-    # Podstawiamy prosty mock przez moduł.
-    import services.firebird.mend_service as module
+    with patch(
+        "services.firebird.mend_service.ValidateService"
+    ) as validate_cls:
 
-    original_validate = module.ValidateService
-
-    class FakeValidateService:
-
-        def __init__(self, database=None):
-
-            self.database = database
-
-        def validate(self):
-
-            return MagicMock(
-                success=True,
-                stdout="VALIDATION OK",
-                stderr="",
-            )
-
-    module.ValidateService = FakeValidateService
-
-    try:
+        validate_cls.return_value.validate.return_value = (
+            create_successful_validation()
+        )
 
         result = service.mend()
-
-    finally:
-
-        module.ValidateService = original_validate
 
     assert result is process_result
 
@@ -232,31 +200,15 @@ def test_mend_uses_correct_runner_options():
         stderr="",
     )
 
-    import services.firebird.mend_service as module
+    with patch(
+        "services.firebird.mend_service.ValidateService"
+    ) as validate_cls:
 
-    original_validate = module.ValidateService
-
-    class FakeValidateService:
-
-        def __init__(self, database=None):
-            self.database = database
-
-        def validate(self):
-            return MagicMock(
-                success=True,
-                stdout="OK",
-                stderr="",
-            )
-
-    module.ValidateService = FakeValidateService
-
-    try:
+        validate_cls.return_value.validate.return_value = (
+            create_successful_validation()
+        )
 
         service.mend()
-
-    finally:
-
-        module.ValidateService = original_validate
 
     kwargs = (
         service.runner
@@ -269,11 +221,11 @@ def test_mend_uses_correct_runner_options():
 
 
 # ==========================================================
-# VALIDATION FAILURE
+# VALIDATION
 # ==========================================================
 
 
-def test_mend_fails_when_validation_fails():
+def test_mend_runs_validation_after_successful_mend():
 
     service = create_service()
 
@@ -295,46 +247,71 @@ def test_mend_fails_when_validation_fails():
         stderr="",
     )
 
-    import services.firebird.mend_service as module
+    with patch(
+        "services.firebird.mend_service.ValidateService"
+    ) as validate_cls:
 
-    original_validate = module.ValidateService
+        validate_cls.return_value.validate.return_value = (
+            create_successful_validation()
+        )
 
-    class FakeValidateService:
+        service.mend()
 
-        def __init__(self, database=None):
-            self.database = database
+        validate_cls.assert_called_once_with(
+            database=service.database
+        )
 
-        def validate(self):
-            return MagicMock(
-                success=False,
-                stdout="",
-                stderr="VALIDATION ERROR",
-            )
+        validate_cls.return_value.validate.assert_called_once_with()
 
-    module.ValidateService = FakeValidateService
 
-    try:
+# ==========================================================
+# VALIDATION FAILURE
+# ==========================================================
 
-        try:
+
+def test_mend_fails_when_validation_fails():
+
+    service = create_service()
+
+    service.service.find_firebird_service.return_value = (
+        "FirebirdServerDefaultInstance"
+    )
+
+    service.service.status.side_effect = [
+        "Running",
+        "Running",
+        "Running",
+    ]
+
+    service.service.stop.return_value = True
+    service.service.start.return_value = True
+
+    service.runner.run.return_value = MagicMock(
+        success=True,
+        stdout="MEND OK",
+        stderr="",
+    )
+
+    validation = MagicMock(
+        success=False,
+        stdout="",
+        stderr="VALIDATION ERROR",
+    )
+
+    with patch(
+        "services.firebird.mend_service.ValidateService"
+    ) as validate_cls:
+
+        validate_cls.return_value.validate.return_value = (
+            validation
+        )
+
+        with pytest.raises(
+            RuntimeError,
+            match="walidacja po naprawie",
+        ):
 
             service.mend()
-
-        except RuntimeError as exc:
-
-            assert (
-                "walidacja po naprawie"
-                in str(exc)
-            )
-
-        else:
-
-            raise AssertionError(
-                "Expected RuntimeError"
-            )
-
-    finally:
-
-        module.ValidateService = original_validate
 
 
 # ==========================================================
@@ -365,22 +342,12 @@ def test_mend_fails_when_service_cannot_be_started():
         stderr="",
     )
 
-    try:
+    with pytest.raises(
+        RuntimeError,
+        match="nie udało się uruchomić",
+    ):
 
         service.mend()
-
-    except RuntimeError as exc:
-
-        assert (
-            "nie udało się uruchomić"
-            in str(exc)
-        )
-
-    else:
-
-        raise AssertionError(
-            "Expected RuntimeError"
-        )
 
 
 # ==========================================================
@@ -407,18 +374,137 @@ def test_mend_restarts_service_after_exception():
         "MEND ERROR"
     )
 
-    try:
+    with pytest.raises(
+        RuntimeError,
+        match="MEND ERROR",
+    ):
 
         service.mend()
 
-    except RuntimeError as exc:
+    service.service.start.assert_called()
 
-        assert str(exc) == "MEND ERROR"
 
-    else:
+# ==========================================================
+# INITIALIZATION
+# ==========================================================
 
-        raise AssertionError(
-            "Expected RuntimeError"
+
+def test_mend_raises_when_firebird_installation_is_missing():
+
+    with patch(
+        "services.firebird.mend_service.InstallationService"
+    ) as installation_cls:
+
+        installation_cls.return_value.first_installation.return_value = (
+            None
         )
 
-    service.service.start.assert_called()
+        with pytest.raises(
+            RuntimeError,
+            match="Nie znaleziono instalacji Firebird",
+        ):
+
+            MendService()
+
+
+def test_mend_raises_when_gfix_is_missing():
+
+    installation = MagicMock()
+    installation.gfix = None
+
+    with patch(
+        "services.firebird.mend_service.InstallationService"
+    ) as installation_cls:
+
+        installation_cls.return_value.first_installation.return_value = (
+            installation
+        )
+
+        with pytest.raises(
+            RuntimeError,
+            match="Nie znaleziono gfix.exe",
+        ):
+
+            MendService()
+
+
+def test_mend_uses_provided_database():
+
+    database = Path(
+        r"C:\test\database.fdb"
+    )
+
+    installation = MagicMock()
+    installation.gfix = Path(
+        r"C:\Firebird\gfix.exe"
+    )
+
+    with (
+        patch(
+            "services.firebird.mend_service.InstallationService"
+        ) as installation_cls,
+        patch(
+            "services.firebird.mend_service.Config"
+        ) as config_cls,
+        patch(
+            "services.firebird.mend_service.ServiceService"
+        ),
+        patch(
+            "services.firebird.mend_service.ProcessRunner"
+        ),
+    ):
+
+        installation_cls.return_value.first_installation.return_value = (
+            installation
+        )
+
+        config_cls.return_value.database = (
+            r"C:\configured\database.fdb"
+        )
+
+        service = MendService(
+            database=database
+        )
+
+    assert service.database == database
+
+
+def test_mend_uses_configured_database():
+
+    installation = MagicMock()
+    installation.gfix = Path(
+        r"C:\Firebird\gfix.exe"
+    )
+
+    configured_database = (
+        r"C:\configured\database.fdb"
+    )
+
+    with (
+        patch(
+            "services.firebird.mend_service.InstallationService"
+        ) as installation_cls,
+        patch(
+            "services.firebird.mend_service.Config"
+        ) as config_cls,
+        patch(
+            "services.firebird.mend_service.ServiceService"
+        ),
+        patch(
+            "services.firebird.mend_service.ProcessRunner"
+        ),
+    ):
+
+        installation_cls.return_value.first_installation.return_value = (
+            installation
+        )
+
+        config_cls.return_value.database = (
+            configured_database
+        )
+
+        service = MendService()
+
+    assert service.database == Path(
+        configured_database
+    )

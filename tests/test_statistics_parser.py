@@ -1,13 +1,71 @@
 from __future__ import annotations
 
+import pytest
+
 from models import DatabaseStatistics
 from services.firebird.statistics_parser import (
     StatisticsParser,
 )
 
 
-def create_parser():
+# ==========================================================
+# HELPERS
+# ==========================================================
+
+
+def create_parser() -> StatisticsParser:
+
     return StatisticsParser()
+
+
+# ==========================================================
+# FULL OUTPUT
+# ==========================================================
+
+
+def test_parse_full_gstat_output():
+
+    parser = create_parser()
+
+    output = """
+    Database "C:\\KSBAZA\\KS-APW\\WAPTEKA.FDB"
+
+    Page size 8192
+    ODS version 13.0
+    Oldest transaction 100
+    Oldest active 120
+    Oldest snapshot 125
+    Next transaction 500
+    Page buffers 2048
+    Database dialect 3
+    Creation date Aug 24, 2026 10:00:00
+    Attributes force write
+    Sweep interval 20000
+    Generation 10
+    """
+
+    result = parser.parse(output)
+
+    assert isinstance(
+        result,
+        DatabaseStatistics,
+    )
+
+    assert result.page_size == 8192
+    assert result.ods == "13.0"
+    assert result.oldest_transaction == 100
+    assert result.oldest_active == 120
+    assert result.oldest_snapshot == 125
+    assert result.next_transaction == 500
+    assert result.page_buffers == 2048
+    assert result.database_dialect == 3
+    assert result.creation_date == (
+        "Aug 24, 2026 10:00:00"
+    )
+    assert result.sweep_interval == 20000
+    assert result.generation == 10
+    assert result.forced_writes is True
+    assert result.no_reserve is False
 
 
 # ==========================================================
@@ -32,210 +90,13 @@ def test_parse_empty_output():
     assert result.sweep_interval == 0
     assert result.forced_writes is False
     assert result.no_reserve is False
-
-
-# ==========================================================
-# PAGE SIZE
-# ==========================================================
-
-
-def test_parse_page_size():
-
-    parser = create_parser()
-
-    result = parser.parse(
-        "Page size 4096"
-    )
-
-    assert result.page_size == 4096
-
-
-# ==========================================================
-# ODS
-# ==========================================================
-
-
-def test_parse_ods():
-
-    parser = create_parser()
-
-    result = parser.parse(
-        "ODS version 12.0"
-    )
-
-    assert result.ods == "12.0"
-
-
-# ==========================================================
-# SWEEP INTERVAL
-# ==========================================================
-
-
-def test_parse_sweep_interval():
-
-    parser = create_parser()
-
-    result = parser.parse(
-        "Sweep interval 20000"
-    )
-
-    assert result.sweep_interval == 20000
-
-
-# ==========================================================
-# PAGE BUFFERS
-# ==========================================================
-
-
-def test_parse_page_buffers():
-
-    parser = create_parser()
-
-    result = parser.parse(
-        "Page buffers 2048"
-    )
-
-    assert result.page_buffers == 2048
-
-
-# ==========================================================
-# TRANSACTIONS
-# ==========================================================
-
-
-def test_parse_transactions():
-
-    parser = create_parser()
-
-    output = """
-    Next transaction 1500
-    Oldest transaction 1400
-    Oldest active 1450
-    Oldest snapshot 1430
-    """
-
-    result = parser.parse(output)
-
-    assert result.next_transaction == 1500
-    assert result.oldest_transaction == 1400
-    assert result.oldest_active == 1450
-    assert result.oldest_snapshot == 1430
-
-
-# ==========================================================
-# DIALECT
-# ==========================================================
-
-
-def test_parse_database_dialect():
-
-    parser = create_parser()
-
-    result = parser.parse(
-        "Database dialect 3"
-    )
-
-    assert result.database_dialect == 3
-
-
-# ==========================================================
-# GENERATION
-# ==========================================================
-
-
-def test_parse_generation():
-
-    parser = create_parser()
-
-    result = parser.parse(
-        "Generation 42"
-    )
-
-    assert result.generation == 42
-
-
-# ==========================================================
-# CREATION DATE
-# ==========================================================
-
-
-def test_parse_creation_date():
-
-    parser = create_parser()
-
-    result = parser.parse(
-        "Creation date: Jan 12, 2026 10:30:00"
-    )
-
-    assert result.creation_date == (
-        ": Jan 12, 2026 10:30:00"
-    )
-
-
-# ==========================================================
-# FORCED WRITES
-# ==========================================================
-
-
-def test_parse_forced_writes():
-
-    parser = create_parser()
-
-    result = parser.parse(
-        "Attributes force write"
-    )
-
-    assert result.forced_writes is True
-
-
-# ==========================================================
-# NO RESERVE
-# ==========================================================
-
-
-def test_parse_no_reserve():
-
-    parser = create_parser()
-
-    result = parser.parse(
-        "Attributes no reserve"
-    )
-
-    assert result.no_reserve is True
-
-
-# ==========================================================
-# BOTH ATTRIBUTES
-# ==========================================================
-
-
-def test_parse_both_attributes():
-
-    parser = create_parser()
-
-    result = parser.parse(
-        "Attributes force write, no reserve"
-    )
-
-    assert result.forced_writes is True
-    assert result.no_reserve is True
-
-
-# ==========================================================
-# ATTRIBUTES CASE INSENSITIVE
-# ==========================================================
-
-
-def test_parse_attributes_case_insensitive():
-
-    parser = create_parser()
-
-    result = parser.parse(
-        "Attributes FORCE WRITE, NO RESERVE"
-    )
-
-    assert result.forced_writes is True
-    assert result.no_reserve is True
+    assert result.oldest_transaction == 0
+    assert result.oldest_active == 0
+    assert result.oldest_snapshot == 0
+    assert result.next_transaction == 0
+    assert result.database_dialect == 0
+    assert result.generation == 0
+    assert result.creation_date == ""
 
 
 # ==========================================================
@@ -248,156 +109,293 @@ def test_parse_ignores_unknown_lines():
     parser = create_parser()
 
     output = """
-    Unknown value 123
-    Something else
+    Some unknown gstat line
+    Another unknown value
     Page size 8192
+    Unknown setting 123
     """
 
     result = parser.parse(output)
 
     assert result.page_size == 8192
+    assert result.ods == ""
 
 
 # ==========================================================
-# EMPTY LINES
+# WHITESPACE
 # ==========================================================
 
 
-def test_parse_ignores_empty_lines():
+def test_parse_ignores_empty_lines_and_whitespace():
 
     parser = create_parser()
 
     output = """
-
-    Page size 4096
-
-
-    Sweep interval 20000
-
+    
+       Page size 4096
+    
+    
+       ODS version 12.0
+    
+    
     """
 
     result = parser.parse(output)
 
     assert result.page_size == 4096
-    assert result.sweep_interval == 20000
+    assert result.ods == "12.0"
 
 
 # ==========================================================
-# COMPLETE GSTAT HEADER
+# INTEGER FIELDS
 # ==========================================================
 
 
-def test_parse_complete_gstat_header():
+@pytest.mark.parametrize(
+    "line,attribute,expected",
+    [
+        (
+            "Page size 4096",
+            "page_size",
+            4096,
+        ),
+        (
+            "Page buffers 1024",
+            "page_buffers",
+            1024,
+        ),
+        (
+            "Sweep interval 10000",
+            "sweep_interval",
+            10000,
+        ),
+        (
+            "Oldest transaction 50",
+            "oldest_transaction",
+            50,
+        ),
+        (
+            "Oldest active 60",
+            "oldest_active",
+            60,
+        ),
+        (
+            "Oldest snapshot 70",
+            "oldest_snapshot",
+            70,
+        ),
+        (
+            "Next transaction 80",
+            "next_transaction",
+            80,
+        ),
+        (
+            "Database dialect 3",
+            "database_dialect",
+            3,
+        ),
+        (
+            "Generation 15",
+            "generation",
+            15,
+        ),
+    ],
+)
+def test_parse_integer_fields(
+    line,
+    attribute,
+    expected,
+):
 
     parser = create_parser()
 
-    output = """
-    Database "C:\\KSBAZA\\KS-APW\\WAPTEKA.FDB"
-    Page size 4096
-    ODS version 12.0
-    Sweep interval 20000
-    Page buffers 2048
-    Next transaction 1500
-    Oldest transaction 1400
-    Oldest active 1450
-    Oldest snapshot 1430
-    Database dialect 3
-    Creation date: Jan 12, 2026 10:30:00
-    Attributes force write, no reserve
-    Generation 42
-    """
+    result = parser.parse(line)
 
-    result = parser.parse(output)
-
-    assert isinstance(
+    assert getattr(
         result,
-        DatabaseStatistics,
+        attribute,
+    ) == expected
+
+
+# ==========================================================
+# ODS
+# ==========================================================
+
+
+def test_parse_ods_version():
+
+    parser = create_parser()
+
+    result = parser.parse(
+        "ODS version 13.0"
     )
 
-    assert result.ods == "12.0"
-    assert result.page_size == 4096
-    assert result.page_buffers == 2048
-    assert result.sweep_interval == 20000
+    assert result.ods == "13.0"
 
-    assert result.next_transaction == 1500
-    assert result.oldest_transaction == 1400
-    assert result.oldest_active == 1450
-    assert result.oldest_snapshot == 1430
 
-    assert result.database_dialect == 3
-    assert result.generation == 42
+def test_parse_ods_version_with_extra_whitespace():
+
+    parser = create_parser()
+
+    result = parser.parse(
+        "ODS version       13.0"
+    )
+
+    assert result.ods == "13.0"
+
+
+# ==========================================================
+# CREATION DATE
+# ==========================================================
+
+
+def test_parse_creation_date():
+
+    parser = create_parser()
+
+    result = parser.parse(
+        "Creation date Aug 24, 2026 10:00:00"
+    )
 
     assert result.creation_date == (
-        ": Jan 12, 2026 10:30:00"
+        "Aug 24, 2026 10:00:00"
+    )
+
+
+def test_parse_creation_date_with_whitespace():
+
+    parser = create_parser()
+
+    result = parser.parse(
+        "Creation date    Aug 24, 2026 10:00:00"
+    )
+
+    assert result.creation_date == (
+        "Aug 24, 2026 10:00:00"
+    )
+
+
+# ==========================================================
+# ATTRIBUTES
+# ==========================================================
+
+
+def test_parse_force_write():
+
+    parser = create_parser()
+
+    result = parser.parse(
+        "Attributes force write"
+    )
+
+    assert result.forced_writes is True
+    assert result.no_reserve is False
+
+
+def test_parse_no_reserve():
+
+    parser = create_parser()
+
+    result = parser.parse(
+        "Attributes no reserve"
+    )
+
+    assert result.forced_writes is False
+    assert result.no_reserve is True
+
+
+def test_parse_force_write_and_no_reserve():
+
+    parser = create_parser()
+
+    result = parser.parse(
+        "Attributes force write no reserve"
     )
 
     assert result.forced_writes is True
     assert result.no_reserve is True
 
 
-# ==========================================================
-# DIRECT INTEGER PARSER
-# ==========================================================
-
-
-def test_parse_int():
+def test_parse_attributes_case_insensitive():
 
     parser = create_parser()
 
-    assert parser._parse_int(
+    result = parser.parse(
+        "Attributes FORCE WRITE NO RESERVE"
+    )
+
+    assert result.forced_writes is True
+    assert result.no_reserve is True
+
+
+def test_parse_attributes_without_known_flags():
+
+    parser = create_parser()
+
+    result = parser.parse(
+        "Attributes something else"
+    )
+
+    assert result.forced_writes is False
+    assert result.no_reserve is False
+
+
+# ==========================================================
+# STATIC HELPERS
+# ==========================================================
+
+
+def test_parse_int_helper():
+
+    result = StatisticsParser._parse_int(
         "Page size 8192"
-    ) == 8192
+    )
+
+    assert result == 8192
 
 
-# ==========================================================
-# DIRECT LAST VALUE PARSER
-# ==========================================================
+def test_parse_last_value_helper():
 
-
-def test_parse_last_value():
-
-    parser = create_parser()
-
-    assert parser._parse_last_value(
+    result = StatisticsParser._parse_last_value(
         "ODS version 13.0"
-    ) == "13.0"
+    )
+
+    assert result == "13.0"
 
 
 # ==========================================================
-# DIRECT ATTRIBUTES PARSER
+# INVALID INTEGER
 # ==========================================================
 
 
-def test_parse_attributes():
+def test_parse_invalid_integer_raises_value_error():
 
     parser = create_parser()
 
-    stats = DatabaseStatistics()
+    with pytest.raises(
+        ValueError
+    ):
 
-    parser._parse_attributes(
-        "Attributes force write, no reserve",
-        stats,
-    )
-
-    assert stats.forced_writes is True
-    assert stats.no_reserve is True
+        parser.parse(
+            "Page size INVALID"
+        )
 
 
 # ==========================================================
-# DEFAULT ATTRIBUTES
+# MULTIPLE ATTRIBUTE LINES
 # ==========================================================
 
 
-def test_parse_attributes_without_flags():
+def test_parse_multiple_attribute_lines():
 
     parser = create_parser()
 
-    stats = DatabaseStatistics()
+    output = """
+    Attributes force write
+    Attributes no reserve
+    """
 
-    parser._parse_attributes(
-        "Attributes",
-        stats,
-    )
+    result = parser.parse(output)
 
-    assert stats.forced_writes is False
-    assert stats.no_reserve is False
+    assert result.forced_writes is False
+    assert result.no_reserve is True
