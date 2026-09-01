@@ -337,3 +337,137 @@ def test_backup_raises_when_gbak_is_missing():
             raise AssertionError(
                 "Expected RuntimeError"
             )
+
+# ==========================================================
+# EDGE CASES
+# ==========================================================
+
+
+def test_backup_accepts_string_destination(
+    tmp_path,
+):
+
+    service = create_service()
+
+    service.runner.run.return_value = MagicMock(
+        success=True,
+        stdout="Backup OK",
+        stderr="",
+    )
+
+    destination = str(
+        tmp_path / "backup.fbk"
+    )
+
+    result = service.backup(
+        destination
+    )
+
+    assert result == (
+        True,
+        "Backup OK",
+    )
+
+
+def test_backup_success_with_empty_stdout(
+    tmp_path,
+):
+
+    service = create_service()
+
+    service.runner.run.return_value = MagicMock(
+        success=True,
+        stdout="",
+        stderr="",
+    )
+
+    destination = (
+        tmp_path / "backup.fbk"
+    )
+
+    result = service.backup(
+        destination
+    )
+
+    assert result == (
+        True,
+        "",
+    )
+
+
+def test_backup_failure_prefers_stderr(
+    tmp_path,
+):
+
+    service = create_service()
+
+    service.runner.run.return_value = MagicMock(
+        success=False,
+        stdout="Backup stdout",
+        stderr="Backup stderr",
+    )
+
+    destination = (
+        tmp_path / "backup.fbk"
+    )
+
+    result = service.backup(
+        destination
+    )
+
+    assert result == (
+        False,
+        "Backup stderr",
+    )
+
+
+def test_backup_failure_uses_stdout_when_stderr_empty(
+    tmp_path,
+):
+
+    service = create_service()
+
+    service.runner.run.return_value = MagicMock(
+        success=False,
+        stdout="Backup stdout",
+        stderr="",
+    )
+
+    destination = (
+        tmp_path / "backup.fbk"
+    )
+
+    result = service.backup(
+        destination
+    )
+
+    assert result == (
+        False,
+        "Backup stdout",
+    )
+
+
+def test_backup_failure_returns_empty_message_when_no_output(
+    tmp_path,
+):
+
+    service = create_service()
+
+    service.runner.run.return_value = MagicMock(
+        success=False,
+        stdout="",
+        stderr="",
+    )
+
+    destination = (
+        tmp_path / "backup.fbk"
+    )
+
+    result = service.backup(
+        destination
+    )
+
+    assert result == (
+        False,
+        "",
+    )

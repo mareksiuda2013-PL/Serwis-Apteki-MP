@@ -5,6 +5,11 @@ from unittest.mock import MagicMock, patch
 from modules.firebird.controller import FirebirdController
 
 
+# ==========================================================
+# HELPERS
+# ==========================================================
+
+
 def create_controller():
 
     with (
@@ -33,16 +38,82 @@ def create_controller():
 
         controller = FirebirdController()
 
-        return (
-            controller,
-            firebird_cls.return_value,
-            statistics_cls.return_value,
-            health_cls.return_value,
-            diagnostics_cls.return_value,
-            recommendation_cls.return_value,
-            report_cls.return_value,
-            workflow_cls.return_value,
-        )
+    return (
+        controller,
+        firebird_cls.return_value,
+        statistics_cls.return_value,
+        health_cls.return_value,
+        diagnostics_cls.return_value,
+        recommendation_cls.return_value,
+        report_cls.return_value,
+        workflow_cls.return_value,
+    )
+
+
+# ==========================================================
+# INITIALIZATION
+# ==========================================================
+
+
+def test_controller_creates_all_services():
+
+    with (
+        patch(
+            "modules.firebird.controller.FirebirdService"
+        ) as firebird_cls,
+        patch(
+            "modules.firebird.controller.StatisticsService"
+        ) as statistics_cls,
+        patch(
+            "modules.firebird.controller.HealthService"
+        ) as health_cls,
+        patch(
+            "modules.firebird.controller.DiagnosticsService"
+        ) as diagnostics_cls,
+        patch(
+            "modules.firebird.controller.RecommendationService"
+        ) as recommendation_cls,
+        patch(
+            "modules.firebird.controller.ReportService"
+        ) as report_cls,
+        patch(
+            "modules.firebird.controller.WorkflowService"
+        ) as workflow_cls,
+    ):
+
+        controller = FirebirdController()
+
+    assert controller.firebird is firebird_cls.return_value
+
+    assert (
+        controller.statistics_service
+        is statistics_cls.return_value
+    )
+
+    assert (
+        controller.health_service
+        is health_cls.return_value
+    )
+
+    assert (
+        controller.diagnostics_service
+        is diagnostics_cls.return_value
+    )
+
+    assert (
+        controller.recommendation_service
+        is recommendation_cls.return_value
+    )
+
+    assert (
+        controller.report_service
+        is report_cls.return_value
+    )
+
+    assert (
+        controller.workflow_service
+        is workflow_cls.return_value
+    )
 
 
 # ==========================================================
@@ -116,11 +187,11 @@ def test_info_passes_database():
         _,
     ) = create_controller()
 
+    database = r"C:\test\database.fdb"
+
     expected = MagicMock()
 
     firebird.get_info.return_value = expected
-
-    database = r"C:\test\database.fdb"
 
     result = controller.info(
         database=database
@@ -151,11 +222,11 @@ def test_inspect_database_calls_firebird_service():
         _,
     ) = create_controller()
 
+    path = r"C:\test\database.fdb"
+
     expected = MagicMock()
 
     firebird.inspect_database.return_value = expected
-
-    path = r"C:\test\database.fdb"
 
     result = controller.inspect_database(
         path
@@ -202,7 +273,42 @@ def test_statistics_calls_statistics_service():
 # ==========================================================
 
 
-def test_diagnostics_gets_statistics_and_analyzes():
+def test_diagnostics_gets_statistics_automatically():
+
+    (
+        controller,
+        _,
+        _,
+        _,
+        diagnostics,
+        _,
+        _,
+        _,
+    ) = create_controller()
+
+    stats = MagicMock()
+    expected = MagicMock()
+
+    with patch.object(
+        controller,
+        "statistics",
+        return_value=stats,
+    ) as statistics_method:
+
+        diagnostics.analyze.return_value = expected
+
+        result = controller.diagnostics()
+
+    statistics_method.assert_called_once_with()
+
+    diagnostics.analyze.assert_called_once_with(
+        stats
+    )
+
+    assert result is expected
+
+
+def test_diagnostics_uses_provided_statistics():
 
     (
         controller,
@@ -218,12 +324,13 @@ def test_diagnostics_gets_statistics_and_analyzes():
     stats = MagicMock()
     expected = MagicMock()
 
-    statistics.statistics.return_value = stats
     diagnostics.analyze.return_value = expected
 
-    result = controller.diagnostics()
+    result = controller.diagnostics(
+        stats
+    )
 
-    statistics.statistics.assert_called_once_with()
+    statistics.statistics.assert_not_called()
 
     diagnostics.analyze.assert_called_once_with(
         stats
@@ -237,7 +344,7 @@ def test_diagnostics_gets_statistics_and_analyzes():
 # ==========================================================
 
 
-def test_recommendations_automatically_gets_diagnostics():
+def test_recommendations_gets_diagnostics_automatically():
 
     (
         controller,
@@ -280,7 +387,7 @@ def test_recommendations_uses_provided_diagnostic():
         controller,
         _,
         _,
-        diagnostics,
+        _,
         _,
         recommendations,
         _,
@@ -298,8 +405,6 @@ def test_recommendations_uses_provided_diagnostic():
         diagnostic
     )
 
-    diagnostics.analyze.assert_not_called()
-
     recommendations.recommend.assert_called_once_with(
         diagnostic
     )
@@ -312,12 +417,12 @@ def test_recommendations_uses_provided_diagnostic():
 # ==========================================================
 
 
-def test_health_calls_health_service():
+def test_health_delegates_without_statistics():
 
     (
         controller,
         _,
-        _,
+        statistics,
         health,
         _,
         _,
@@ -333,6 +438,39 @@ def test_health_calls_health_service():
 
     health.check.assert_called_once_with()
 
+    statistics.statistics.assert_not_called()
+
+    assert result is expected
+
+
+def test_health_passes_provided_statistics():
+
+    (
+        controller,
+        _,
+        statistics,
+        health,
+        _,
+        _,
+        _,
+        _,
+    ) = create_controller()
+
+    stats = MagicMock()
+    expected = MagicMock()
+
+    health.check.return_value = expected
+
+    result = controller.health(
+        stats
+    )
+
+    statistics.statistics.assert_not_called()
+
+    health.check.assert_called_once_with(
+        stats
+    )
+
     assert result is expected
 
 
@@ -341,12 +479,91 @@ def test_health_calls_health_service():
 # ==========================================================
 
 
-def test_report_generates_complete_report():
+def test_report_builds_all_missing_data():
 
     (
         controller,
-        firebird,
-        statistics,
+        _,
+        _,
+        _,
+        _,
+        _,
+        report_service,
+        _,
+    ) = create_controller()
+
+    database = r"C:\test\database.fdb"
+
+    stats = MagicMock()
+    health_result = MagicMock()
+    diagnostic_result = MagicMock()
+    recommendation_result = MagicMock()
+    expected_report = MagicMock()
+
+    with (
+        patch.object(
+            controller,
+            "database",
+            return_value=database,
+        ),
+        patch.object(
+            controller,
+            "statistics",
+            return_value=stats,
+        ) as statistics_method,
+        patch.object(
+            controller,
+            "health",
+            return_value=health_result,
+        ) as health_method,
+        patch.object(
+            controller,
+            "diagnostics",
+            return_value=diagnostic_result,
+        ) as diagnostics_method,
+        patch.object(
+            controller,
+            "recommendations",
+            return_value=recommendation_result,
+        ) as recommendations_method,
+    ):
+
+        report_service.generate.return_value = (
+            expected_report
+        )
+
+        result = controller.report()
+
+    statistics_method.assert_called_once_with()
+
+    health_method.assert_called_once_with(
+        stats
+    )
+
+    diagnostics_method.assert_called_once_with(
+        stats
+    )
+
+    recommendations_method.assert_called_once_with(
+        diagnostic_result
+    )
+
+    report_service.generate.assert_called_once_with(
+        database=database,
+        statistics=stats,
+        health=health_result,
+        recommendations=recommendation_result,
+    )
+
+    assert result is expected_report
+
+
+def test_report_uses_provided_data():
+
+    (
+        controller,
+        _,
+        _,
         health,
         diagnostics,
         recommendations,
@@ -362,17 +579,65 @@ def test_report_generates_complete_report():
     recommendation_result = MagicMock()
     expected_report = MagicMock()
 
-    firebird.cfg.database = database
+    with (
+        patch.object(
+            controller,
+            "database",
+            return_value=database,
+        ),
+        patch.object(
+            controller,
+            "statistics",
+            return_value=stats,
+        ) as statistics_method,
+    ):
 
-    statistics.statistics.return_value = stats
-    health.check.return_value = health_result
-    diagnostics.analyze.return_value = diagnostic_result
-    recommendations.recommend.return_value = (
-        recommendation_result
+        report_service.generate.return_value = (
+            expected_report
+        )
+
+        result = controller.report(
+            diagnostic=diagnostic_result,
+            health=health_result,
+            recommendations=recommendation_result,
+        )
+
+    statistics_method.assert_called_once_with()
+
+    health.check.assert_not_called()
+    diagnostics.analyze.assert_not_called()
+    recommendations.recommend.assert_not_called()
+
+    report_service.generate.assert_called_once_with(
+        database=database,
+        statistics=stats,
+        health=health_result,
+        recommendations=recommendation_result,
     )
-    report_service.generate.return_value = (
-        expected_report
-    )
+
+    assert result is expected_report
+
+
+def test_report_uses_provided_diagnostic():
+
+    (
+        controller,
+        _,
+        _,
+        _,
+        diagnostics,
+        recommendations,
+        report_service,
+        _,
+    ) = create_controller()
+
+    database = r"C:\test\database.fdb"
+
+    stats = MagicMock()
+    health_result = MagicMock()
+    diagnostic_result = MagicMock()
+    recommendation_result = MagicMock()
+    expected_report = MagicMock()
 
     with (
         patch.object(
@@ -392,17 +657,24 @@ def test_report_generates_complete_report():
         ),
         patch.object(
             controller,
-            "diagnostics",
-            return_value=diagnostic_result,
-        ),
-        patch.object(
-            controller,
             "recommendations",
             return_value=recommendation_result,
-        ),
+        ) as recommendations_method,
     ):
 
-        result = controller.report()
+        report_service.generate.return_value = (
+            expected_report
+        )
+
+        result = controller.report(
+            diagnostic=diagnostic_result,
+        )
+
+    recommendations_method.assert_called_once_with(
+        diagnostic_result
+    )
+
+    diagnostics.analyze.assert_not_called()
 
     report_service.generate.assert_called_once_with(
         database=database,
@@ -414,12 +686,12 @@ def test_report_generates_complete_report():
     assert result is expected_report
 
 
-def test_report_uses_provided_data():
+def test_report_uses_provided_health():
 
     (
         controller,
         _,
-        statistics,
+        _,
         health,
         diagnostics,
         recommendations,
@@ -435,10 +707,6 @@ def test_report_uses_provided_data():
     recommendation_result = MagicMock()
     expected_report = MagicMock()
 
-    report_service.generate.return_value = (
-        expected_report
-    )
-
     with (
         patch.object(
             controller,
@@ -450,13 +718,31 @@ def test_report_uses_provided_data():
             "statistics",
             return_value=stats,
         ),
+        patch.object(
+            controller,
+            "diagnostics",
+            return_value=diagnostic_result,
+        ),
+        patch.object(
+            controller,
+            "recommendations",
+            return_value=recommendation_result,
+        ),
     ):
 
-        result = controller.report(
-            diagnostic=diagnostic_result,
-            health=health_result,
-            recommendations=recommendation_result,
+        report_service.generate.return_value = (
+            expected_report
         )
+
+        result = controller.report(
+            health=health_result,
+        )
+
+    health.check.assert_not_called()
+
+    diagnostics.analyze.assert_not_called()
+
+    recommendations.recommend.assert_not_called()
 
     report_service.generate.assert_called_once_with(
         database=database,
@@ -464,12 +750,6 @@ def test_report_uses_provided_data():
         health=health_result,
         recommendations=recommendation_result,
     )
-
-    diagnostics.analyze.assert_not_called()
-
-    recommendations.recommend.assert_not_called()
-
-    health.check.assert_not_called()
 
     assert result is expected_report
 
@@ -498,9 +778,7 @@ def test_workflow_calls_workflow_service():
 
     expected = MagicMock()
 
-    workflow_service.run.return_value = (
-        expected
-    )
+    workflow_service.run.return_value = expected
 
     result = controller.workflow(
         backup_file=backup_file
@@ -558,150 +836,6 @@ def test_workflow_report_calls_report_service():
     )
 
     assert result is expected
-    # ==========================================================
-# HEALTH — PROVIDED STATISTICS
-# ==========================================================
-
-
-
-    (
-        controller,
-        _,
-        _,
-        health,
-        _,
-        _,
-        _,
-        _,
-    ) = create_controller()
-
-    stats = MagicMock()
-    expected = MagicMock()
-
-    health.check.return_value = expected
-
-    result = controller.health(
-        stats
-    )
-
-    health.check.assert_called_once_with(
-        stats
-    )
-
-    assert result is expected
-
-
-# ==========================================================
-# DIAGNOSTICS — PROVIDED STATISTICS
-# ==========================================================
-
-
-def test_diagnostics_uses_provided_statistics():
-
-    (
-        controller,
-        _,
-        _,
-        _,
-        diagnostics,
-        _,
-        _,
-        _,
-    ) = create_controller()
-
-    stats = MagicMock()
-    expected = MagicMock()
-
-    diagnostics.analyze.return_value = expected
-
-    result = controller.diagnostics(
-        stats
-    )
-
-    diagnostics.analyze.assert_called_once_with(
-        stats
-    )
-
-    assert result is expected
-
-
-# ==========================================================
-# REPORT — HEALTH / DIAGNOSTICS / RECOMMENDATIONS
-# ==========================================================
-
-
-def test_report_builds_missing_data_from_statistics():
-
-    (
-        controller,
-        _,
-        _,
-        health,
-        diagnostics,
-        recommendations,
-        report_service,
-        _,
-    ) = create_controller()
-
-    database = r"C:\test\database.fdb"
-
-    stats = MagicMock()
-    health_result = MagicMock()
-    diagnostic_result = MagicMock()
-    recommendation_result = MagicMock()
-    expected_report = MagicMock()
-
-    health.check.return_value = health_result
-
-    diagnostics.analyze.return_value = (
-        diagnostic_result
-    )
-
-    recommendations.recommend.return_value = (
-        recommendation_result
-    )
-
-    report_service.generate.return_value = (
-        expected_report
-    )
-
-    with patch.object(
-        controller,
-        "database",
-        return_value=database,
-    ), patch.object(
-        controller,
-        "statistics",
-        return_value=stats,
-    ):
-
-        result = controller.report()
-
-    health.check.assert_called_once_with(
-        stats
-    )
-
-    diagnostics.analyze.assert_called_once_with(
-        stats
-    )
-
-    recommendations.recommend.assert_called_once_with(
-        diagnostic_result
-    )
-
-    report_service.generate.assert_called_once_with(
-        database=database,
-        statistics=stats,
-        health=health_result,
-        recommendations=recommendation_result,
-    )
-
-    assert result is expected_report
-
-
-# ==========================================================
-# WORKFLOW REPORT — DATABASE
-# ==========================================================
 
 
 def test_workflow_report_uses_configured_database():
