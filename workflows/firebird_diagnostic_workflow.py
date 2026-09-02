@@ -5,6 +5,9 @@ from dataclasses import dataclass
 from services.firebird.diagnostics_service import (
     DiagnosticResult,
 )
+from services.firebird.health_service import (
+    DatabaseHealth,
+)
 from services.firebird.recommendation_service import (
     RecommendationResult,
 )
@@ -18,6 +21,7 @@ class DiagnosticWorkflowResult:
 
     statistics: DatabaseStatistics
     diagnostic: DiagnosticResult
+    health: DatabaseHealth
     recommendations: RecommendationResult
 
 
@@ -39,7 +43,15 @@ class DiagnosticWorkflow:
         )
 
         diagnostic = (
-            self.controller.diagnostics()
+            self.controller.diagnostics(
+                statistics
+            )
+        )
+
+        health = (
+            self.controller.health(
+                statistics
+            )
         )
 
         recommendations = (
@@ -51,5 +63,6 @@ class DiagnosticWorkflow:
         return DiagnosticWorkflowResult(
             statistics=statistics,
             diagnostic=diagnostic,
+            health=health,
             recommendations=recommendations,
         )
