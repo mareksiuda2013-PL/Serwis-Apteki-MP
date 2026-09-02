@@ -42,3 +42,6 @@ desktop.ini
 *.tmp
 *.temp
 *.bak
+
+# Pytest temporary directories
+.pytest-temp/
