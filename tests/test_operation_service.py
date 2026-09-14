@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from unittest.mock import patch
 
 from models.operation_result import OperationResult
@@ -150,6 +151,53 @@ def test_operation_tuple_empty_message():
     assert result.error == ""
 
 
+def test_operation_tuple_none_message():
+
+    service = FirebirdOperationService()
+
+    result = service.execute(
+        lambda: (
+            True,
+            None,
+        ),
+        "BACKUP",
+    )
+
+    assert isinstance(
+        result,
+        OperationResult,
+    )
+
+    assert result.success is True
+    assert result.message == ""
+    assert result.output == ""
+    assert result.error == ""
+
+
+def test_operation_tuple_with_extra_values_uses_standard_success():
+
+    service = FirebirdOperationService()
+
+    result = service.execute(
+        lambda: (
+            True,
+            "OK",
+            "EXTRA",
+        ),
+        "TEST",
+    )
+
+    assert isinstance(
+        result,
+        OperationResult,
+    )
+
+    assert result.success is True
+    assert result.message == (
+        "Operacja zakończona pomyślnie."
+    )
+
+
 # ==========================================================
 # OPERATION RESULT PASSED THROUGH
 # ==========================================================
@@ -198,6 +246,57 @@ def test_failed_operation_result_is_returned_unchanged():
     assert result is expected
 
 
+def test_failed_operation_result_logs_error():
+
+    service = FirebirdOperationService()
+
+    expected = OperationResult(
+        success=False,
+        message="ERROR",
+        error="ERROR",
+    )
+
+    with patch(
+        "services.firebird.operation_service.logger"
+    ) as logger:
+
+        result = service.execute(
+            lambda: expected,
+            "TEST",
+        )
+
+    assert result is expected
+
+    logger.error.assert_called_once_with(
+        "Operacja zakończona błędem: TEST"
+    )
+
+
+def test_successful_operation_result_logs_success():
+
+    service = FirebirdOperationService()
+
+    expected = OperationResult(
+        success=True,
+        message="OK",
+    )
+
+    with patch(
+        "services.firebird.operation_service.logger"
+    ) as logger:
+
+        result = service.execute(
+            lambda: expected,
+            "TEST",
+        )
+
+    assert result is expected
+
+    logger.info.assert_any_call(
+        "Operacja zakończona pomyślnie: TEST"
+    )
+
+
 # ==========================================================
 # PROCESS RESULT
 # ==========================================================
@@ -207,13 +306,33 @@ def test_process_result_success():
 
     service = FirebirdOperationService()
 
+    started = datetime(
+        2026,
+        9,
+        14,
+        10,
+        0,
+        0,
+    )
+
+    finished = datetime(
+        2026,
+        9,
+        14,
+        10,
+        0,
+        2,
+    )
+
     process_result = FakeProcessResult(
         success=True,
         stdout="Validation OK",
         stderr="",
         command="gfix -validate",
         exit_code=0,
-        duration=1.5,
+        started=started,
+        finished=finished,
+        duration=2.0,
     )
 
     result = service.execute(
@@ -232,7 +351,9 @@ def test_process_result_success():
     assert result.error == ""
     assert result.command == "gfix -validate"
     assert result.exit_code == 0
-    assert result.duration == 1.5
+    assert result.started == started
+    assert result.finished == finished
+    assert result.duration == 2.0
 
 
 def test_process_result_failure():
@@ -282,6 +403,56 @@ def test_process_result_uses_output_when_stderr_empty():
     assert result.message == "Validation output"
     assert result.output == "Validation output"
     assert result.error == ""
+
+
+def test_process_result_uses_error_when_stderr_empty():
+
+    service = FirebirdOperationService()
+
+    class ResultWithError:
+
+        success = False
+        stdout = "Validation output"
+        stderr = ""
+        error = "Alternative error"
+        command = "gfix -validate"
+        exit_code = 1
+        started = None
+        finished = None
+        duration = 0.5
+
+    result = service.execute(
+        lambda: ResultWithError(),
+        "VALIDATE",
+    )
+
+    assert result.success is False
+    assert result.message == "Alternative error"
+    assert result.output == "Validation output"
+    assert result.error == "Alternative error"
+
+
+def test_process_result_stderr_has_priority_over_stdout():
+
+    service = FirebirdOperationService()
+
+    process_result = FakeProcessResult(
+        success=False,
+        stdout="Validation output",
+        stderr="Validation ERROR",
+        command="gfix -validate",
+        exit_code=1,
+    )
+
+    result = service.execute(
+        lambda: process_result,
+        "VALIDATE",
+    )
+
+    assert result.success is False
+    assert result.message == "Validation ERROR"
+    assert result.output == "Validation output"
+    assert result.error == "Validation ERROR"
 
 
 # ==========================================================
@@ -372,4 +543,62 @@ def test_operation_logs_start_and_error():
 
     logger.error.assert_called_once_with(
         "TEST ERROR: Testowy błąd"
+    )
+
+
+def test_operation_tuple_failure_logs_error():
+
+    service = FirebirdOperationService()
+
+    with patch(
+        "services.firebird.operation_service.logger"
+    ) as logger:
+
+        result = service.execute(
+            lambda: (
+                False,
+                "Backup ERROR",
+            ),
+            "BACKUP",
+        )
+
+    assert result.success is False
+
+    logger.info.assert_called_once_with(
+        "Rozpoczęto operację: BACKUP"
+    )
+
+    logger.error.assert_called_once_with(
+        "Operacja zakończona błędem: BACKUP"
+    )
+
+
+def test_operation_process_failure_logs_error():
+
+    service = FirebirdOperationService()
+
+    process_result = FakeProcessResult(
+        success=False,
+        stderr="Validation ERROR",
+        command="gfix -validate",
+        exit_code=1,
+    )
+
+    with patch(
+        "services.firebird.operation_service.logger"
+    ) as logger:
+
+        result = service.execute(
+            lambda: process_result,
+            "VALIDATE",
+        )
+
+    assert result.success is False
+
+    logger.info.assert_called_once_with(
+        "Rozpoczęto operację: VALIDATE"
+    )
+
+    logger.error.assert_called_once_with(
+        "Operacja zakończona błędem: VALIDATE"
     )
