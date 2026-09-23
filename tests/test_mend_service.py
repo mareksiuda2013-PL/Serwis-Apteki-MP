@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from services.firebird.mend_service import MendService
+from services.firebird.maintenance.mend_service import MendService
 
 
 def create_service():
@@ -144,7 +144,7 @@ def test_mend_builds_correct_command():
     )
 
     with patch(
-        "services.firebird.mend_service.ValidateService"
+        "services.firebird.maintenance.mend_service.ValidateService"
     ) as validate_cls:
 
         validate_cls.return_value.validate.return_value = (
@@ -201,7 +201,7 @@ def test_mend_uses_correct_runner_options():
     )
 
     with patch(
-        "services.firebird.mend_service.ValidateService"
+        "services.firebird.maintenance.mend_service.ValidateService"
     ) as validate_cls:
 
         validate_cls.return_value.validate.return_value = (
@@ -248,7 +248,7 @@ def test_mend_runs_validation_after_successful_mend():
     )
 
     with patch(
-        "services.firebird.mend_service.ValidateService"
+        "services.firebird.maintenance.mend_service.ValidateService"
     ) as validate_cls:
 
         validate_cls.return_value.validate.return_value = (
@@ -299,7 +299,7 @@ def test_mend_fails_when_validation_fails():
     )
 
     with patch(
-        "services.firebird.mend_service.ValidateService"
+        "services.firebird.maintenance.mend_service.ValidateService"
     ) as validate_cls:
 
         validate_cls.return_value.validate.return_value = (
@@ -392,7 +392,7 @@ def test_mend_restarts_service_after_exception():
 def test_mend_raises_when_firebird_installation_is_missing():
 
     with patch(
-        "services.firebird.mend_service.InstallationService"
+        "services.firebird.maintenance.mend_service.InstallationService"
     ) as installation_cls:
 
         installation_cls.return_value.first_installation.return_value = (
@@ -413,7 +413,7 @@ def test_mend_raises_when_gfix_is_missing():
     installation.gfix = None
 
     with patch(
-        "services.firebird.mend_service.InstallationService"
+        "services.firebird.maintenance.mend_service.InstallationService"
     ) as installation_cls:
 
         installation_cls.return_value.first_installation.return_value = (
@@ -441,16 +441,16 @@ def test_mend_uses_provided_database():
 
     with (
         patch(
-            "services.firebird.mend_service.InstallationService"
+            "services.firebird.maintenance.mend_service.InstallationService"
         ) as installation_cls,
         patch(
-            "services.firebird.mend_service.Config"
+            "services.firebird.maintenance.mend_service.Config"
         ) as config_cls,
         patch(
-            "services.firebird.mend_service.ServiceService"
+            "services.firebird.maintenance.mend_service.ServiceService"
         ),
         patch(
-            "services.firebird.mend_service.ProcessRunner"
+            "services.firebird.maintenance.mend_service.ProcessRunner"
         ),
     ):
 
@@ -482,16 +482,16 @@ def test_mend_uses_configured_database():
 
     with (
         patch(
-            "services.firebird.mend_service.InstallationService"
+            "services.firebird.maintenance.mend_service.InstallationService"
         ) as installation_cls,
         patch(
-            "services.firebird.mend_service.Config"
+            "services.firebird.maintenance.mend_service.Config"
         ) as config_cls,
         patch(
-            "services.firebird.mend_service.ServiceService"
+            "services.firebird.maintenance.mend_service.ServiceService"
         ),
         patch(
-            "services.firebird.mend_service.ProcessRunner"
+            "services.firebird.maintenance.mend_service.ProcessRunner"
         ),
     ):
 

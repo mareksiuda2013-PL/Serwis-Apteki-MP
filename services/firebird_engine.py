@@ -6,7 +6,7 @@ from core.logger import logger
 from models.operation_result import OperationResult
 
 from services.firebird.maintenance.backup_service import BackupService
-from services.firebird.mend_service import MendService
+from services.firebird.maintenance.mend_service import MendService
 from services.firebird.operation_service import (
     FirebirdOperationService,
 )

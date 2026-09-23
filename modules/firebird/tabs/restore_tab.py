@@ -1029,7 +1029,7 @@ class OperationsTab(QWidget):
         if answer != QMessageBox.Yes:
             return
 
-        from services.firebird.mend_service import (
+        from services.firebird.maintenance.mend_service import (
             MendService,
         )
 

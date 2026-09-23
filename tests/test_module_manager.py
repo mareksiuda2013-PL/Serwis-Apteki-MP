@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from services.firebird.mend_service import MendService
+from services.firebird.maintenance.mend_service import MendService
 
 
 def create_service():
@@ -76,7 +76,7 @@ def test_mend_builds_correct_command():
     )
     service.runner.run.return_value = process_result
 
-    with patch("services.firebird.mend_service.ValidateService") as validate_cls:
+    with patch("services.firebird.maintenance.mend_service.ValidateService") as validate_cls:
         validate_cls.return_value.validate.return_value = create_successful_validation()
         result = service.mend()
 
@@ -109,7 +109,7 @@ def test_mend_uses_correct_runner_options():
         stderr="",
     )
 
-    with patch("services.firebird.mend_service.ValidateService") as validate_cls:
+    with patch("services.firebird.maintenance.mend_service.ValidateService") as validate_cls:
         validate_cls.return_value.validate.return_value = create_successful_validation()
         service.mend()
 
@@ -132,7 +132,7 @@ def test_mend_runs_validation_after_successful_mend():
         stderr="",
     )
 
-    with patch("services.firebird.mend_service.ValidateService") as validate_cls:
+    with patch("services.firebird.maintenance.mend_service.ValidateService") as validate_cls:
         validate_cls.return_value.validate.return_value = create_successful_validation()
 
         service.mend()
@@ -160,7 +160,7 @@ def test_mend_fails_when_validation_fails():
         stderr="VALIDATION ERROR",
     )
 
-    with patch("services.firebird.mend_service.ValidateService") as validate_cls:
+    with patch("services.firebird.maintenance.mend_service.ValidateService") as validate_cls:
         validate_cls.return_value.validate.return_value = validation
 
         with pytest.raises(RuntimeError, match="walidacja po naprawie"):
@@ -198,7 +198,7 @@ def test_mend_restarts_service_after_exception():
 
 
 def test_mend_raises_when_firebird_installation_is_missing():
-    with patch("services.firebird.mend_service.InstallationService") as installation_cls:
+    with patch("services.firebird.maintenance.mend_service.InstallationService") as installation_cls:
         installation_cls.return_value.first_installation.return_value = None
 
         with pytest.raises(
@@ -212,7 +212,7 @@ def test_mend_raises_when_gfix_is_missing():
     installation = MagicMock()
     installation.gfix = None
 
-    with patch("services.firebird.mend_service.InstallationService") as installation_cls:
+    with patch("services.firebird.maintenance.mend_service.InstallationService") as installation_cls:
         installation_cls.return_value.first_installation.return_value = installation
 
         with pytest.raises(RuntimeError, match="Nie znaleziono gfix.exe"):
@@ -226,13 +226,13 @@ def test_mend_uses_provided_database():
     installation.gfix = Path(r"C:\Firebird\gfix.exe")
 
     with patch(
-        "services.firebird.mend_service.InstallationService"
+        "services.firebird.maintenance.mend_service.InstallationService"
     ) as installation_cls, patch(
-        "services.firebird.mend_service.Config"
+        "services.firebird.maintenance.mend_service.Config"
     ) as config_cls, patch(
-        "services.firebird.mend_service.ServiceService"
+        "services.firebird.maintenance.mend_service.ServiceService"
     ), patch(
-        "services.firebird.mend_service.ProcessRunner"
+        "services.firebird.maintenance.mend_service.ProcessRunner"
     ):
         installation_cls.return_value.first_installation.return_value = installation
         config_cls.return_value.database = r"C:\configured\database.fdb"
@@ -249,13 +249,13 @@ def test_mend_uses_configured_database():
     configured_database = r"C:\configured\database.fdb"
 
     with patch(
-        "services.firebird.mend_service.InstallationService"
+        "services.firebird.maintenance.mend_service.InstallationService"
     ) as installation_cls, patch(
-        "services.firebird.mend_service.Config"
+        "services.firebird.maintenance.mend_service.Config"
     ) as config_cls, patch(
-        "services.firebird.mend_service.ServiceService"
+        "services.firebird.maintenance.mend_service.ServiceService"
     ), patch(
-        "services.firebird.mend_service.ProcessRunner"
+        "services.firebird.maintenance.mend_service.ProcessRunner"
     ):
         installation_cls.return_value.first_installation.return_value = installation
         config_cls.return_value.database = configured_database

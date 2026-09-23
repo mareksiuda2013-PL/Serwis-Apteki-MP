@@ -9,7 +9,7 @@ from services.firebird.maintenance.backup_service import BackupService
 from services.firebird.maintenance.restore_service import RestoreService
 from services.firebird.validate_service import ValidateService
 from services.firebird.maintenance.sweep_service import SweepService
-from services.firebird.mend_service import MendService
+from services.firebird.maintenance.mend_service import MendService
 
 
 # ==========================================================
