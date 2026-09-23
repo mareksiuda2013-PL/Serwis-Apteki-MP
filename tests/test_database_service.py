@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from services.firebird.database_service import DatabaseService
+from services.firebird.database.database_service import DatabaseService
 
 
 def create_service() -> DatabaseService:
@@ -13,7 +13,7 @@ def create_service() -> DatabaseService:
     installation = MagicMock()
 
     with patch(
-        "services.firebird.database_service.InstallationService"
+        "services.firebird.database.database_service.InstallationService"
     ) as installation_service:
 
         installation_service.return_value.first_installation.return_value = (
@@ -35,9 +35,9 @@ def test_init_creates_firebird_client():
     installation = MagicMock()
 
     with patch(
-        "services.firebird.database_service.InstallationService"
+        "services.firebird.database.database_service.InstallationService"
     ) as installation_service, patch(
-        "services.firebird.database_service.FirebirdClient"
+        "services.firebird.database.database_service.FirebirdClient"
     ) as client_class:
 
         installation_service.return_value.first_installation.return_value = (
@@ -60,7 +60,7 @@ def test_init_creates_firebird_client():
 def test_init_raises_when_firebird_not_found():
 
     with patch(
-        "services.firebird.database_service.InstallationService"
+        "services.firebird.database.database_service.InstallationService"
     ) as installation_service:
 
         installation_service.return_value.first_installation.return_value = (

@@ -7,7 +7,7 @@ from models import DatabaseStatistics
 from services.firebird.base_firebird_service import (
     BaseFirebirdService,
 )
-from services.firebird.statistics_parser import (
+from .statistics_parser import (
     StatisticsParser,
 )
 

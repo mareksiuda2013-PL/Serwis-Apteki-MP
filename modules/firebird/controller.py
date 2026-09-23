@@ -4,14 +4,14 @@ from services.firebird import FirebirdService
 from services.firebird.diagnostics_service import (
     DiagnosticsService,
 )
-from services.firebird.health_service import HealthService
+from services.firebird.database.health_service import HealthService
 from services.firebird.recommendation_service import (
     RecommendationService,
 )
 from services.firebird.report_service import (
     ReportService,
 )
-from services.firebird.statistics_service import (
+from services.firebird.database.statistics_service import (
     StatisticsService,
 )
 from services.firebird.workflow_service import (
@@ -292,3 +292,4 @@ class FirebirdController:
                 workflow=workflow,
             )
         )
+

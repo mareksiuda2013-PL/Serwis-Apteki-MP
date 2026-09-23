@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from services.firebird.backup_service import BackupService
+from services.firebird.maintenance.backup_service import BackupService
 from services.firebird.diagnostics_service import (
     DiagnosticResult,
     DiagnosticsService,
@@ -11,7 +11,7 @@ from services.firebird.recommendation_service import (
     RecommendationResult,
     RecommendationService,
 )
-from services.firebird.statistics_service import (
+from services.firebird.database.statistics_service import (
     StatisticsService,
 )
 

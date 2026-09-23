@@ -814,7 +814,7 @@ class OperationsTab(QWidget):
         if answer != QMessageBox.Yes:
             return
 
-        from services.firebird.backup_service import (
+        from services.firebird.maintenance.backup_service import (
             BackupService,
         )
 

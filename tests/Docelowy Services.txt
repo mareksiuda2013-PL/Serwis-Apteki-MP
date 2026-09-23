@@ -1,0 +1,36 @@
+Docelowy Services 
+
+
+services/
+└── firebird/
+    ├── __init__.py
+    │
+    ├── engine.py
+    ├── firebird_controller.py
+    ├── service_controller.py
+    │
+    ├── client/
+    │   └── firebird_client.py
+    │
+    ├── discovery/
+    │   ├── installation_service.py
+    │   ├── config_service.py
+    │   └── version_service.py
+    │
+    ├── database/
+    │   ├── database_service.py
+    │   ├── health_service.py
+    │   ├── statistics_service.py
+    │   └── diagnostics_service.py
+    │
+    ├── maintenance/
+    │   ├── backup_service.py
+    │   ├── restore_service.py
+    │   ├── sweep_service.py
+    │   ├── mend_service.py
+    │   └── validate_service.py
+    │
+    └── reporting/
+        ├── recommendation_service.py
+        ├── report_service.py
+        └── workflow_service.py

@@ -4,10 +4,10 @@ from config import Config
 from core.logger import logger
 from models import FirebirdInfo
 
-from .database_service import DatabaseService
+from .database.database_service import DatabaseService
 from .discovery.installation_service import InstallationService
 from .service_service import ServiceService
-from .statistics_service import StatisticsService
+from .database.statistics_service import StatisticsService
 
 
 class FirebirdService:

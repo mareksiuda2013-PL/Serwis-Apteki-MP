@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from models import DatabaseStatistics
-from services.firebird.statistics_parser import (
+from services.firebird.database.statistics_parser import (
     StatisticsParser,
 )
 

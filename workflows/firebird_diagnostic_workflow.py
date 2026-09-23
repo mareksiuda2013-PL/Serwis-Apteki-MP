@@ -5,13 +5,13 @@ from dataclasses import dataclass
 from services.firebird.diagnostics_service import (
     DiagnosticResult,
 )
-from services.firebird.health_service import (
+from services.firebird.database.health_service import (
     DatabaseHealth,
 )
 from services.firebird.recommendation_service import (
     RecommendationResult,
 )
-from services.firebird.statistics_service import (
+from services.firebird.database.statistics_service import (
     DatabaseStatistics,
 )
 
@@ -66,3 +66,4 @@ class DiagnosticWorkflow:
             health=health,
             recommendations=recommendations,
         )
+

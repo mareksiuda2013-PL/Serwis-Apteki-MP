@@ -6,7 +6,7 @@ from models.database_health import (
     DatabaseHealth,
     HealthCheck,
 )
-from services.firebird.health_service import (
+from services.firebird.database.health_service import (
     HealthService,
 )
 
@@ -71,7 +71,7 @@ def create_stats(
 def test_init_creates_statistics_service():
 
     with patch(
-        "services.firebird.health_service.StatisticsService"
+        "services.firebird.database.health_service.StatisticsService"
     ) as statistics_cls:
 
         service = HealthService()

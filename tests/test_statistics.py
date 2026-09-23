@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from services.firebird.statistics_service import (
+from services.firebird.database.statistics_service import (
     StatisticsService,
 )
 
@@ -37,7 +37,7 @@ def create_service() -> StatisticsService:
     )
 
     with patch(
-        "services.firebird.statistics_service.BaseFirebirdService.__init__",
+        "services.firebird.database.statistics_service.BaseFirebirdService.__init__",
         return_value=None,
     ):
 
@@ -57,7 +57,7 @@ def create_service() -> StatisticsService:
 
     service.runner = MagicMock()
 
-    from services.firebird.statistics_parser import (
+    from services.firebird.database.statistics_parser import (
         StatisticsParser,
     )
 
@@ -353,7 +353,7 @@ def test_header_propagates_runner_exception():
 def test_statistics_raises_when_gstat_is_missing():
 
     with patch(
-        "services.firebird.statistics_service.BaseFirebirdService.__init__",
+        "services.firebird.database.statistics_service.BaseFirebirdService.__init__",
         return_value=None,
     ):
 
@@ -383,7 +383,7 @@ def test_statistics_initializes_parser():
     )
 
     with patch(
-        "services.firebird.statistics_service.BaseFirebirdService.__init__",
+        "services.firebird.database.statistics_service.BaseFirebirdService.__init__",
         return_value=None,
     ):
 
@@ -394,7 +394,7 @@ def test_statistics_initializes_parser():
         service.installation = installation
 
         with patch(
-            "services.firebird.statistics_service.StatisticsParser"
+            "services.firebird.database.statistics_service.StatisticsParser"
         ) as parser_cls:
 
             StatisticsService.__init__(
@@ -406,3 +406,4 @@ def test_statistics_initializes_parser():
     assert service.parser is (
         parser_cls.return_value
     )
+

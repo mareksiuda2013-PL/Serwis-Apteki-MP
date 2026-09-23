@@ -20,7 +20,7 @@ MODULES = [
     "services.firebird.firebird_service",
     "services.firebird.discovery.installation_service",
     "services.firebird.service_service",
-    "services.firebird.database_service",
+    "services.firebird.database.database_service",
 ]
 
 failed = False

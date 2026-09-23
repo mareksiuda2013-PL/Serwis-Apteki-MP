@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from services.firebird.backup_service import BackupService
+from services.firebird.maintenance.backup_service import BackupService
 from services.firebird.restore_service import RestoreService
 from services.firebird.validate_service import ValidateService
 from services.firebird.sweep_service import SweepService

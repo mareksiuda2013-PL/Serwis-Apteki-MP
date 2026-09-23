@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from services.firebird.backup_service import BackupService
+from services.firebird.maintenance.backup_service import BackupService
 
 
 def create_service():
@@ -309,7 +309,7 @@ def test_backup_propagates_runner_exception(
 def test_backup_raises_when_gbak_is_missing():
 
     with patch(
-        "services.firebird.backup_service.BaseFirebirdService.__init__",
+        "services.firebird.maintenance.backup_service.BaseFirebirdService.__init__",
         return_value=None,
     ):
 

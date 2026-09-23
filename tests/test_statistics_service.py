@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from services.firebird.statistics_service import (
+from services.firebird.database.statistics_service import (
     StatisticsService,
 )
 
@@ -55,7 +55,7 @@ def create_service():
             "services.firebird.base_firebird_service.ProcessRunner"
         ) as runner_cls,
         patch(
-            "services.firebird.statistics_service.StatisticsParser"
+            "services.firebird.database.statistics_service.StatisticsParser"
         ) as parser_cls,
     ):
 
