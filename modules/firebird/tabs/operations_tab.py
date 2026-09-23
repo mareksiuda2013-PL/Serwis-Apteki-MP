@@ -885,7 +885,7 @@ class OperationsTab(QWidget):
         if answer != QMessageBox.Yes:
             return
 
-        from services.firebird.sweep_service import (
+        from services.firebird.maintenance.sweep_service import (
             SweepService,
         )
 

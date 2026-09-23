@@ -11,7 +11,7 @@ from services.firebird.operation_service import (
     FirebirdOperationService,
 )
 from services.firebird.maintenance.restore_service import RestoreService
-from services.firebird.sweep_service import SweepService
+from services.firebird.maintenance.sweep_service import SweepService
 from services.firebird.validate_service import ValidateService
 
 

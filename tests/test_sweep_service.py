@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from services.firebird.sweep_service import SweepService
+from services.firebird.maintenance.sweep_service import SweepService
 
 
 def create_service():
@@ -231,7 +231,7 @@ def test_sweep_propagates_runner_exception():
 def test_sweep_raises_when_firebird_installation_is_missing():
 
     with patch(
-        "services.firebird.sweep_service.InstallationService"
+        "services.firebird.maintenance.sweep_service.InstallationService"
     ) as installation_cls:
 
         installation_cls.return_value.first_installation.return_value = (
@@ -252,7 +252,7 @@ def test_sweep_raises_when_gfix_is_missing():
     installation.gfix = None
 
     with patch(
-        "services.firebird.sweep_service.InstallationService"
+        "services.firebird.maintenance.sweep_service.InstallationService"
     ) as installation_cls:
 
         installation_cls.return_value.first_installation.return_value = (
@@ -280,13 +280,13 @@ def test_sweep_uses_provided_database():
 
     with (
         patch(
-            "services.firebird.sweep_service.InstallationService"
+            "services.firebird.maintenance.sweep_service.InstallationService"
         ) as installation_cls,
         patch(
-            "services.firebird.sweep_service.Config"
+            "services.firebird.maintenance.sweep_service.Config"
         ) as config_cls,
         patch(
-            "services.firebird.sweep_service.ProcessRunner"
+            "services.firebird.maintenance.sweep_service.ProcessRunner"
         ),
     ):
 
@@ -318,13 +318,13 @@ def test_sweep_uses_configured_database():
 
     with (
         patch(
-            "services.firebird.sweep_service.InstallationService"
+            "services.firebird.maintenance.sweep_service.InstallationService"
         ) as installation_cls,
         patch(
-            "services.firebird.sweep_service.Config"
+            "services.firebird.maintenance.sweep_service.Config"
         ) as config_cls,
         patch(
-            "services.firebird.sweep_service.ProcessRunner"
+            "services.firebird.maintenance.sweep_service.ProcessRunner"
         ),
     ):
 
