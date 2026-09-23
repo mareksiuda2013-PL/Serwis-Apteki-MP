@@ -5,7 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from services.firebird.restore_service import RestoreService
+from services.firebird.maintenance.restore_service import RestoreService
 
 
 def create_service():
@@ -507,7 +507,7 @@ def test_restore_propagates_runner_exception(
 def test_restore_raises_when_gbak_is_missing():
 
     with patch(
-        "services.firebird.restore_service.BaseFirebirdService.__init__",
+        "services.firebird.maintenance.restore_service.BaseFirebirdService.__init__",
         return_value=None,
     ):
 

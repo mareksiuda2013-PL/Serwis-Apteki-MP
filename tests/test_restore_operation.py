@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from services.firebird.restore_service import RestoreService
+from services.firebird.maintenance.restore_service import RestoreService
 
 
 def test_restore_missing_backup(tmp_path):

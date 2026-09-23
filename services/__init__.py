@@ -10,7 +10,7 @@ from services.firebird.mend_service import MendService
 from services.firebird.operation_service import (
     FirebirdOperationService,
 )
-from services.firebird.restore_service import RestoreService
+from services.firebird.maintenance.restore_service import RestoreService
 from services.firebird.sweep_service import SweepService
 from services.firebird.validate_service import ValidateService
 
