@@ -7,7 +7,7 @@ from core.process_runner import ProcessRunner
 
 from services.firebird.discovery.installation_service import InstallationService
 from services.firebird.service_service import ServiceService
-from services.firebird.validate_service import ValidateService
+from services.firebird.maintenance.validate_service import ValidateService
 
 
 class MendService:

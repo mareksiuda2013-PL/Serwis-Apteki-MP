@@ -12,7 +12,7 @@ from services.firebird.operation_service import (
 )
 from services.firebird.maintenance.restore_service import RestoreService
 from services.firebird.maintenance.sweep_service import SweepService
-from services.firebird.validate_service import ValidateService
+from services.firebird.maintenance.validate_service import ValidateService
 
 
 class FirebirdEngine:

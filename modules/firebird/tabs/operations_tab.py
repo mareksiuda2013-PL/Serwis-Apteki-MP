@@ -850,7 +850,7 @@ class OperationsTab(QWidget):
         if answer != QMessageBox.Yes:
             return
 
-        from services.firebird.validate_service import (
+        from services.firebird.maintenance.validate_service import (
             ValidateService,
         )
 

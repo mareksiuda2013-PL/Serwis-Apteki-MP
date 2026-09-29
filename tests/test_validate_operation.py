@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from services.firebird.validate_service import ValidateService
+from services.firebird.maintenance.validate_service import ValidateService
 
 
 # ==========================================================
@@ -19,10 +19,10 @@ def create_service(
 
     with (
         patch(
-            "services.firebird.validate_service.InstallationService"
+            "services.firebird.maintenance.validate_service.InstallationService"
         ) as installation_cls,
         patch(
-            "services.firebird.validate_service.ProcessRunner"
+            "services.firebird.maintenance.validate_service.ProcessRunner"
         ) as runner_cls,
     ):
         installation_cls.return_value.first_installation.return_value = (
@@ -78,7 +78,7 @@ def test_validate_service_raises_when_gfix_missing():
     installation.gfix = None
 
     with patch(
-        "services.firebird.validate_service.InstallationService"
+        "services.firebird.maintenance.validate_service.InstallationService"
     ) as installation_cls:
 
         installation_cls.return_value.first_installation.return_value = (

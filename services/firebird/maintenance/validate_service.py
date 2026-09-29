@@ -5,8 +5,8 @@ from pathlib import Path
 from config import Config
 from core.process_runner import ProcessRunner
 
-from .discovery.installation_service import InstallationService
-from .service_service import ServiceService
+from services.firebird.discovery.installation_service import InstallationService
+from services.firebird.service_service import ServiceService
 
 
 class ValidateService:

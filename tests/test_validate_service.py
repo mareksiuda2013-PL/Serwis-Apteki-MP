@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from services.firebird.validate_service import ValidateService
+from services.firebird.maintenance.validate_service import ValidateService
 
 
 # ==========================================================
@@ -235,13 +235,13 @@ def test_validate_propagates_runner_exception():
 def test_validate_constructor_fails_when_gfix_missing():
 
     with patch(
-        "services.firebird.validate_service.Config"
+        "services.firebird.maintenance.validate_service.Config"
     ), patch(
-        "services.firebird.validate_service.ServiceService"
+        "services.firebird.maintenance.validate_service.ServiceService"
     ), patch(
-        "services.firebird.validate_service.ProcessRunner"
+        "services.firebird.maintenance.validate_service.ProcessRunner"
     ), patch(
-        "services.firebird.validate_service.InstallationService"
+        "services.firebird.maintenance.validate_service.InstallationService"
     ) as installation_cls:
 
         installation = MagicMock()
@@ -276,13 +276,13 @@ def test_validate_constructor_fails_when_gfix_missing():
 def test_validate_constructor_fails_when_firebird_missing():
 
     with patch(
-        "services.firebird.validate_service.Config"
+        "services.firebird.maintenance.validate_service.Config"
     ), patch(
-        "services.firebird.validate_service.ServiceService"
+        "services.firebird.maintenance.validate_service.ServiceService"
     ), patch(
-        "services.firebird.validate_service.ProcessRunner"
+        "services.firebird.maintenance.validate_service.ProcessRunner"
     ), patch(
-        "services.firebird.validate_service.InstallationService"
+        "services.firebird.maintenance.validate_service.InstallationService"
     ) as installation_cls:
 
         installation_cls.return_value.first_installation.return_value = (
@@ -318,13 +318,13 @@ def test_validate_constructor_uses_provided_database():
     )
 
     with patch(
-        "services.firebird.validate_service.Config"
+        "services.firebird.maintenance.validate_service.Config"
     ) as config_cls, patch(
-        "services.firebird.validate_service.ServiceService"
+        "services.firebird.maintenance.validate_service.ServiceService"
     ), patch(
-        "services.firebird.validate_service.ProcessRunner"
+        "services.firebird.maintenance.validate_service.ProcessRunner"
     ), patch(
-        "services.firebird.validate_service.InstallationService"
+        "services.firebird.maintenance.validate_service.InstallationService"
     ) as installation_cls:
 
         config_cls.return_value.database = (
@@ -359,13 +359,13 @@ def test_validate_constructor_uses_configured_database():
     )
 
     with patch(
-        "services.firebird.validate_service.Config"
+        "services.firebird.maintenance.validate_service.Config"
     ) as config_cls, patch(
-        "services.firebird.validate_service.ServiceService"
+        "services.firebird.maintenance.validate_service.ServiceService"
     ), patch(
-        "services.firebird.validate_service.ProcessRunner"
+        "services.firebird.maintenance.validate_service.ProcessRunner"
     ), patch(
-        "services.firebird.validate_service.InstallationService"
+        "services.firebird.maintenance.validate_service.InstallationService"
     ) as installation_cls:
 
         config_cls.return_value.database = (
