@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from services.firebird.workflow_service import (
+from services.firebird.reporting.workflow_service import (
     WorkflowResult,
     WorkflowService,
     WorkflowStep,

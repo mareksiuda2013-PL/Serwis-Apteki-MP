@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from services.firebird.report_service import (
+from services.firebird.reporting.report_service import (
     ReportService,
 )
-from services.firebird.diagnostics_service import (
+from services.firebird.database.diagnostics_service import (
     DiagnosticResult,
 )
 from models import DatabaseStatistics
@@ -15,7 +15,7 @@ from models.report import (
     DatabaseReport,
     ReportItem,
 )
-from services.firebird.workflow_service import (
+from services.firebird.reporting.workflow_service import (
     WorkflowResult,
 )
 

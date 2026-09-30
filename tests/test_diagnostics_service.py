@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from models import DatabaseStatistics
-from services.firebird.diagnostics_service import (
+from services.firebird.database.diagnostics_service import (
     DiagnosticResult,
     DiagnosticsService,
 )

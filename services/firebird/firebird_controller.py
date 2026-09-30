@@ -1,20 +1,20 @@
 from __future__ import annotations
 
 from services.firebird import FirebirdService
-from services.firebird.diagnostics_service import (
+from services.firebird.database.diagnostics_service import (
     DiagnosticsService,
 )
 from services.firebird.database.health_service import HealthService
-from services.firebird.recommendation_service import (
+from services.firebird.reporting.recommendation_service import (
     RecommendationService,
 )
-from services.firebird.report_service import (
+from services.firebird.reporting.report_service import (
     ReportService,
 )
 from services.firebird.database.statistics_service import (
     StatisticsService,
 )
-from services.firebird.workflow_service import (
+from services.firebird.reporting.workflow_service import (
     WorkflowResult,
     WorkflowService,
 )

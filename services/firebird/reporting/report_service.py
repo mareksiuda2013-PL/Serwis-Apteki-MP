@@ -6,7 +6,7 @@ from models.report import (
     DatabaseReport,
     ReportItem,
 )
-from services.firebird.workflow_service import (
+from services.firebird.reporting.workflow_service import (
     WorkflowResult,
 )
 
