@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from config import Config
 from core.logger import logger
@@ -6,14 +6,14 @@ from models import FirebirdInfo
 
 from .database.database_service import DatabaseService
 from .discovery.installation_service import InstallationService
-from .service_service import ServiceService
+from .service_controller import ServiceController
 from .database.statistics_service import StatisticsService
 
 
 class FirebirdService:
     """
-    Główny serwis odpowiedzialny za informacje
-    dotyczące instalacji Firebird oraz bazy danych.
+    GĹ‚Ăłwny serwis odpowiedzialny za informacje
+    dotyczÄ…ce instalacji Firebird oraz bazy danych.
     """
 
     def __init__(self):
@@ -22,7 +22,7 @@ class FirebirdService:
 
         self.installation = InstallationService()
         self.database = DatabaseService()
-        self.service = ServiceService()
+        self.service = ServiceController()
 
     # ==================================================
     # FIREBIRD INFO
@@ -130,7 +130,7 @@ class FirebirdService:
             except Exception as exc:
 
                 logger.error(
-                    f"GSTAT | nie udało się pobrać "
+                    f"GSTAT | nie udaĹ‚o siÄ™ pobraÄ‡ "
                     f"statystyk: {exc}"
                 )
 
@@ -151,12 +151,12 @@ class FirebirdService:
 
                 logger.error(
                     f"FirebirdService | "
-                    f"nie udało się pobrać liczby tabel: "
+                    f"nie udaĹ‚o siÄ™ pobraÄ‡ liczby tabel: "
                     f"{exc}"
                 )
 
         # ==================================================
-        # USŁUGA FIREBIRD
+        # USĹUGA FIREBIRD
         # ==================================================
 
         service_name = (

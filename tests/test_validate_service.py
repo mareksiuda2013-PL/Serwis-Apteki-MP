@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -228,7 +228,7 @@ def test_validate_propagates_runner_exception():
 
 
 # ==========================================================
-# CONSTRUCTOR — GBFIX MISSING
+# CONSTRUCTOR â€” GBFIX MISSING
 # ==========================================================
 
 
@@ -237,7 +237,7 @@ def test_validate_constructor_fails_when_gfix_missing():
     with patch(
         "services.firebird.maintenance.validate_service.Config"
     ), patch(
-        "services.firebird.maintenance.validate_service.ServiceService"
+        "services.firebird.maintenance.validate_service.ServiceController"
     ), patch(
         "services.firebird.maintenance.validate_service.ProcessRunner"
     ), patch(
@@ -269,7 +269,7 @@ def test_validate_constructor_fails_when_gfix_missing():
 
 
 # ==========================================================
-# CONSTRUCTOR — FIREBIRD MISSING
+# CONSTRUCTOR â€” FIREBIRD MISSING
 # ==========================================================
 
 
@@ -278,7 +278,7 @@ def test_validate_constructor_fails_when_firebird_missing():
     with patch(
         "services.firebird.maintenance.validate_service.Config"
     ), patch(
-        "services.firebird.maintenance.validate_service.ServiceService"
+        "services.firebird.maintenance.validate_service.ServiceController"
     ), patch(
         "services.firebird.maintenance.validate_service.ProcessRunner"
     ), patch(
@@ -307,7 +307,7 @@ def test_validate_constructor_fails_when_firebird_missing():
 
 
 # ==========================================================
-# CONSTRUCTOR — CUSTOM DATABASE
+# CONSTRUCTOR â€” CUSTOM DATABASE
 # ==========================================================
 
 
@@ -320,7 +320,7 @@ def test_validate_constructor_uses_provided_database():
     with patch(
         "services.firebird.maintenance.validate_service.Config"
     ) as config_cls, patch(
-        "services.firebird.maintenance.validate_service.ServiceService"
+        "services.firebird.maintenance.validate_service.ServiceController"
     ), patch(
         "services.firebird.maintenance.validate_service.ProcessRunner"
     ), patch(
@@ -348,7 +348,7 @@ def test_validate_constructor_uses_provided_database():
 
 
 # ==========================================================
-# CONSTRUCTOR — CONFIGURED DATABASE
+# CONSTRUCTOR â€” CONFIGURED DATABASE
 # ==========================================================
 
 
@@ -361,7 +361,7 @@ def test_validate_constructor_uses_configured_database():
     with patch(
         "services.firebird.maintenance.validate_service.Config"
     ) as config_cls, patch(
-        "services.firebird.maintenance.validate_service.ServiceService"
+        "services.firebird.maintenance.validate_service.ServiceController"
     ), patch(
         "services.firebird.maintenance.validate_service.ProcessRunner"
     ), patch(

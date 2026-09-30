@@ -1,10 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import sys
 from pathlib import Path
 from importlib import import_module
 
-# Dodaj katalog główny projektu do PYTHONPATH
+# Dodaj katalog gĹ‚Ăłwny projektu do PYTHONPATH
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 if str(PROJECT_ROOT) not in sys.path:
@@ -19,7 +19,7 @@ MODULES = [
     "modules.firebird.controller",
     "services.firebird.firebird_service",
     "services.firebird.discovery.installation_service",
-    "services.firebird.service_service",
+    "services.firebird.service_controller",
     "services.firebird.database.database_service",
 ]
 
@@ -43,4 +43,4 @@ for module in MODULES:
 if failed:
     raise SystemExit(1)
 
-print("\n✅ Wszystkie importy poprawne.")
+print("\nâś… Wszystkie importy poprawne.")

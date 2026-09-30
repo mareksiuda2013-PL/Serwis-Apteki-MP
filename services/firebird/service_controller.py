@@ -4,7 +4,7 @@ import subprocess
 import time
 
 
-class ServiceService:
+class ServiceController:
     """
     Zarządza usługami Windows Firebird.
     """

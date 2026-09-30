@@ -1,10 +1,10 @@
 from unittest.mock import Mock, patch
 
-from services.firebird.service_service import ServiceService
+from services.firebird.service_controller import ServiceController
 
 
 def make_service():
-    return ServiceService.__new__(ServiceService)
+    return ServiceController.__new__(ServiceController)
 
 
 def test_run_sc_success():
@@ -16,7 +16,7 @@ def test_run_sc_success():
     completed.stderr = ""
 
     with patch(
-        "services.firebird.service_service.subprocess.run",
+        "services.firebird.service_controller.subprocess.run",
         return_value=completed,
     ) as run:
         result = service._run_sc("query", "FirebirdServer")
@@ -40,7 +40,7 @@ def test_run_sc_failure_uses_stderr_when_stdout_empty():
     completed.stderr = "ERROR"
 
     with patch(
-        "services.firebird.service_service.subprocess.run",
+        "services.firebird.service_controller.subprocess.run",
         return_value=completed,
     ):
         result = service._run_sc("query", "FirebirdServer")
@@ -57,7 +57,7 @@ def test_run_sc_returns_empty_output_when_both_streams_empty():
     completed.stderr = ""
 
     with patch(
-        "services.firebird.service_service.subprocess.run",
+        "services.firebird.service_controller.subprocess.run",
         return_value=completed,
     ):
         result = service._run_sc("query", "FirebirdServer")
@@ -69,7 +69,7 @@ def test_run_sc_handles_exception():
     service = make_service()
 
     with patch(
-        "services.firebird.service_service.subprocess.run",
+        "services.firebird.service_controller.subprocess.run",
         side_effect=RuntimeError("boom"),
     ):
         result = service._run_sc("query", "FirebirdServer")

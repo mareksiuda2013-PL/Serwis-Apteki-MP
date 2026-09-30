@@ -6,7 +6,7 @@ from config import Config
 from core.process_runner import ProcessRunner
 
 from services.firebird.discovery.installation_service import InstallationService
-from services.firebird.service_service import ServiceService
+from services.firebird.service_controller import ServiceController
 
 
 class ValidateService:
@@ -18,7 +18,7 @@ class ValidateService:
 
         self.cfg = Config()
 
-        self.service = ServiceService()
+        self.service = ServiceController()
         self.runner = ProcessRunner()
 
         # ==================================================

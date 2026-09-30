@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -50,7 +50,7 @@ def create_service():
             "services.firebird.firebird_service.DatabaseService"
         ) as database_cls,
         patch(
-            "services.firebird.firebird_service.ServiceService"
+            "services.firebird.firebird_service.ServiceController"
         ) as service_cls,
     ):
 

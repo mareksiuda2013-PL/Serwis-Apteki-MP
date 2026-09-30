@@ -447,7 +447,7 @@ def test_mend_uses_provided_database():
             "services.firebird.maintenance.mend_service.Config"
         ) as config_cls,
         patch(
-            "services.firebird.maintenance.mend_service.ServiceService"
+            "services.firebird.maintenance.mend_service.ServiceController"
         ),
         patch(
             "services.firebird.maintenance.mend_service.ProcessRunner"
@@ -488,7 +488,7 @@ def test_mend_uses_configured_database():
             "services.firebird.maintenance.mend_service.Config"
         ) as config_cls,
         patch(
-            "services.firebird.maintenance.mend_service.ServiceService"
+            "services.firebird.maintenance.mend_service.ServiceController"
         ),
         patch(
             "services.firebird.maintenance.mend_service.ProcessRunner"
