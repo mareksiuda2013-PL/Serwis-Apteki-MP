@@ -9,7 +9,7 @@ from models.operation_result import OperationResult
 from services.firebird.operation_service import (
     FirebirdOperationService,
 )
-from services.firebird_engine import FirebirdEngine
+from services.firebird.engine import FirebirdEngine
 
 
 # ==========================================================
@@ -65,7 +65,7 @@ def test_engine_uses_provided_operation_service():
 def test_engine_creates_default_operation_service():
 
     with patch(
-        "services.firebird_engine.FirebirdOperationService"
+        "services.firebird.engine.FirebirdOperationService"
     ) as service_cls:
 
         service = FirebirdEngine()
@@ -145,7 +145,7 @@ def test_engine_backup_passes_destination():
     )
 
     with patch(
-        "services.firebird_engine.BackupService"
+        "services.firebird.engine.BackupService"
     ) as service_cls:
 
         service_cls.return_value.backup.return_value = (
@@ -181,7 +181,7 @@ def test_engine_backup_accepts_string_destination():
     )
 
     with patch(
-        "services.firebird_engine.BackupService"
+        "services.firebird.engine.BackupService"
     ) as service_cls:
 
         service_cls.return_value.backup.return_value = (
@@ -260,7 +260,7 @@ def test_engine_restore_passes_arguments():
     )
 
     with patch(
-        "services.firebird_engine.RestoreService"
+        "services.firebird.engine.RestoreService"
     ) as service_cls:
 
         service_cls.return_value.restore.return_value = (
@@ -305,7 +305,7 @@ def test_engine_restore_defaults_replace_to_true():
     )
 
     with patch(
-        "services.firebird_engine.RestoreService"
+        "services.firebird.engine.RestoreService"
     ) as service_cls:
 
         service_cls.return_value.restore.return_value = (
@@ -371,7 +371,7 @@ def test_engine_validate_calls_validate_service():
     )
 
     with patch(
-        "services.firebird_engine.ValidateService"
+        "services.firebird.engine.ValidateService"
     ) as service_cls:
 
         service_cls.return_value.validate.return_value = (
@@ -436,7 +436,7 @@ def test_engine_sweep_calls_sweep_service():
     )
 
     with patch(
-        "services.firebird_engine.SweepService"
+        "services.firebird.engine.SweepService"
     ) as service_cls:
 
         service_cls.return_value.sweep.return_value = (
@@ -501,7 +501,7 @@ def test_engine_mend_calls_mend_service():
     )
 
     with patch(
-        "services.firebird_engine.MendService"
+        "services.firebird.engine.MendService"
     ) as service_cls:
 
         service_cls.return_value.mend.return_value = (
