@@ -1,78 +1,76 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from pathlib import Path
 
-from models import DatabaseStatistics
-
-from services.firebird.base_firebird_service import (
-    BaseFirebirdService,
-)
-from .statistics_parser import (
-    StatisticsParser,
-)
+from models.firebird_config import FirebirdConfig
 
 
-class StatisticsService(BaseFirebirdService):
+class ConfigService:
 
-    def __init__(
-        self,
-        database: str | Path | None = None,
-    ):
+    def load(self, config_path: Path | None) -> FirebirdConfig:
 
-        super().__init__(
-            database=database
-        )
+        config = FirebirdConfig()
 
-        if self.installation.gstat is None:
+        config.path = config_path
+        config.raw = {}
 
-            raise RuntimeError(
-                "Nie znaleziono gstat.exe."
-            )
+        if config_path is None:
+            return config
 
-        self.gstat = self.installation.gstat
+        if not config_path.exists():
+            return config
 
-        self.parser = StatisticsParser()
+        config.exists = True
 
-    # ==================================================
-    # GSTAT HEADER
-    # ==================================================
+        lines = config_path.read_text(
+            encoding="utf-8",
+            errors="ignore",
+        ).splitlines()
 
-    def header(self):
+        for line in lines:
 
-        command = [
-            str(self.gstat),
-            "-h",
-            str(self.database),
-            "-user",
-            self.cfg.user,
-            "-password",
-            self.cfg.password,
-        ]
+            line = line.strip()
 
-        return self.runner.run(
-            command,
-            operation="GSTAT",
-        )
+            if not line:
+                continue
 
-    # ==================================================
-    # STATISTICS
-    # ==================================================
+            if line.startswith("#"):
+                continue
 
-    def statistics(
-        self,
-    ) -> DatabaseStatistics:
+            if "=" not in line:
+                continue
 
-        result = self.header()
+            key, value = line.split("=", 1)
 
-        if not result.success:
+            key = key.strip()
+            value = value.strip()
 
-            raise RuntimeError(
-                result.stderr
-                or result.stdout
-                or "GSTAT zakoĹ„czyĹ‚ siÄ™ bĹ‚Ä™dem."
-            )
+            config.raw[key] = value
 
-        return self.parser.parse(
-            result.stdout
-        )
+            key_lower = key.lower()
 
+            if key_lower == "remoteserviceport":
+
+                try:
+                    config.remote_service_port = int(value)
+                except ValueError:
+                    pass
+
+            elif key_lower == "guardian":
+
+                config.guardian = value.lower() in (
+                    "1",
+                    "true",
+                    "yes",
+                    "on",
+                )
+
+            elif key_lower == "rootdirectory":
+
+                config.root_directory = value
+
+            elif key_lower == "tempdirectories":
+
+                config.temp_directories = value
+
+        return config

@@ -1,4 +1,4 @@
-from .config_service import ConfigService
+from .discovery.config_service import ConfigService
 from .firebird_service import FirebirdService
 from .service_service import ServiceService
 

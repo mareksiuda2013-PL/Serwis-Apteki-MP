@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from services.firebird.config_service import ConfigService
+from services.firebird.discovery.config_service import ConfigService
 
 
 def test_load_none_path():
