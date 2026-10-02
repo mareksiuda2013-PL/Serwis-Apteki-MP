@@ -561,7 +561,13 @@ class DiagnosticsTab(QWidget):
             health = (
                 self.controller.health(
                     stats)
-        )
+            )
+
+            recommendation_result = (
+                self.controller.recommendations(
+                    diagnostic
+                )
+            )
 
         except Exception as exc:
 
