@@ -1,24 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any, Callable
 
 from core.logger import logger
 from models.operation_result import OperationResult
-
-
-@dataclass(slots=True)
-class OperationExecutionResult:
-    """
-    Wewnętrzny wynik wykonania operacji.
-
-    Klasa pozostaje kompatybilna z istniejącym
-    mechanizmem FirebirdOperationService.
-    """
-
-    success: bool
-    message: str = ""
-    result: Any = None
 
 
 class FirebirdOperationService:
