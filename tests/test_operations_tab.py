@@ -4,6 +4,8 @@ from pathlib import Path
 
 from unittest.mock import MagicMock, patch
 
+from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QMessageBox
 
 from modules.firebird.tabs.operations_tab import OperationsTab
@@ -638,3 +640,71 @@ def test_mend_starts_mend_service_operation():
         operation()
 
     mend_service.return_value.mend.assert_called_once_with()
+
+def test_run_async_operation_connects_worker_and_thread_signals():
+    tab = OperationsTab.__new__(OperationsTab)
+
+    tab._thread = None
+    tab._worker = None
+    tab.operation_started = MagicMock()
+
+    fake_thread = MagicMock()
+    fake_worker = MagicMock()
+    fake_service = MagicMock()
+
+    with (
+        patch(
+            "modules.firebird.tabs.operations_tab.QThread",
+            return_value=fake_thread,
+        ),
+        patch(
+            "modules.firebird.tabs.operations_tab.OperationWorker",
+            return_value=fake_worker,
+        ),
+        patch(
+            "modules.firebird.tabs.operations_tab.FirebirdOperationService",
+            return_value=fake_service,
+        ),
+    ):
+        tab.run_async_operation(
+            operation=MagicMock(),
+            name="VALIDATE",
+            success_text="OK",
+            error_text="BŁĄD",
+            dialog_title="Validate",
+            warning_on_failure=True,
+        )
+
+    fake_thread.started.connect.assert_called_once_with(
+        fake_worker.run
+    )
+
+    fake_worker.finished.connect.assert_any_call(
+        tab._operation_result,
+        Qt.ConnectionType.QueuedConnection,
+    )
+
+    fake_worker.error.connect.assert_any_call(
+        tab._operation_error,
+        Qt.ConnectionType.QueuedConnection,
+    )
+
+    fake_worker.finished.connect.assert_any_call(
+        fake_thread.quit
+    )
+
+    fake_worker.error.connect.assert_any_call(
+        fake_thread.quit
+    )
+
+    fake_thread.finished.connect.assert_any_call(
+        fake_worker.deleteLater
+    )
+
+    fake_thread.finished.connect.assert_any_call(
+        fake_thread.deleteLater
+    )
+
+    fake_thread.finished.connect.assert_any_call(
+        tab._thread_finished
+    )
