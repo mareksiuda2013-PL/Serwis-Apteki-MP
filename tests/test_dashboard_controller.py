@@ -7,6 +7,42 @@ from modules.dashboard.controller import (
 )
 
 
+def test_controller_creates_all_services():
+
+    with (
+        patch(
+            "modules.dashboard.controller.SystemService"
+        ) as system_cls,
+        patch(
+            "modules.dashboard.controller.FirebirdService"
+        ) as firebird_cls,
+        patch(
+            "modules.dashboard.controller.DiskService"
+        ) as disk_cls,
+        patch(
+            "modules.dashboard.controller.NetworkService"
+        ) as network_cls,
+    ):
+
+        controller = DashboardController()
+
+    assert controller.system_service is (
+        system_cls.return_value
+    )
+
+    assert controller.firebird_service is (
+        firebird_cls.return_value
+    )
+
+    assert controller.disk_service is (
+        disk_cls.return_value
+    )
+
+    assert controller.network_service is (
+        network_cls.return_value
+    )
+
+
 def test_system_info():
 
     system_info = MagicMock()
