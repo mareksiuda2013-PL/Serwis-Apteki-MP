@@ -386,3 +386,36 @@ def test_validate_constructor_uses_configured_database():
         assert service.database == Path(
             configured_database
         )
+def test_validate_constructor_converts_string_database_to_path():
+
+    database = r"C:\test\custom.fdb"
+
+    with (
+        patch(
+            "services.firebird.maintenance.validate_service.Config"
+        ),
+        patch(
+            "services.firebird.maintenance.validate_service.ServiceController"
+        ),
+        patch(
+            "services.firebird.maintenance.validate_service.ProcessRunner"
+        ),
+        patch(
+            "services.firebird.maintenance.validate_service.InstallationService"
+        ) as installation_cls,
+    ):
+
+        installation = MagicMock()
+        installation.gfix = Path(
+            r"C:\Firebird\gfix.exe"
+        )
+
+        installation_cls.return_value.first_installation.return_value = (
+            installation
+        )
+
+        service = ValidateService(
+            database=database
+        )
+
+    assert service.database == Path(database)

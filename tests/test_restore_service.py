@@ -526,3 +526,97 @@ def test_restore_raises_when_gbak_is_missing():
             RestoreService.__init__(
                 service
             )
+def test_restore_accepts_string_paths(tmp_path):
+    service = create_service()
+
+    backup_file = tmp_path / "backup.fbk"
+    backup_file.write_text("backup")
+
+    database_file = tmp_path / "database.fdb"
+
+    service.runner.run.return_value = MagicMock(
+        success=True,
+        stdout="OK",
+        stderr="",
+    )
+
+    result = service.restore(
+        str(backup_file),
+        str(database_file),
+    )
+
+    assert result == (
+        True,
+        "Restore zakończony pomyślnie.",
+    )
+
+
+def test_restore_replaces_existing_database_when_replace_true(
+    tmp_path,
+):
+    service = create_service()
+
+    backup_file = tmp_path / "backup.fbk"
+    backup_file.write_text("backup")
+
+    database_file = tmp_path / "database.fdb"
+    database_file.write_text("existing database")
+
+    service.runner.run.return_value = MagicMock(
+        success=True,
+        stdout="OK",
+        stderr="",
+    )
+
+    result = service.restore(
+        backup_file,
+        database_file,
+        replace=True,
+    )
+
+    assert result == (
+        True,
+        "Restore zakończony pomyślnie.",
+    )
+
+    command = (
+        service.runner
+        .run
+        .call_args.args[0]
+    )
+
+    assert "-rep" in command
+
+
+def test_restore_uses_configured_credentials(
+    tmp_path,
+):
+    service = create_service()
+
+    service.cfg.user = "TESTUSER"
+    service.cfg.password = "TESTPASSWORD"
+
+    backup_file = tmp_path / "backup.fbk"
+    backup_file.write_text("backup")
+
+    database_file = tmp_path / "database.fdb"
+
+    service.runner.run.return_value = MagicMock(
+        success=True,
+        stdout="OK",
+        stderr="",
+    )
+
+    service.restore(
+        backup_file,
+        database_file,
+    )
+
+    command = (
+        service.runner
+        .run
+        .call_args.args[0]
+    )
+
+    assert "TESTUSER" in command
+    assert "TESTPASSWORD" in command            

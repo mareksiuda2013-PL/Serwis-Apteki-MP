@@ -471,3 +471,17 @@ def test_backup_failure_returns_empty_message_when_no_output(
         False,
         "",
     )
+def test_backup_initialization_sets_gbak_path():
+    gbak_path = Path(r"C:\Firebird\gbak.exe")
+
+    with patch(
+        "services.firebird.maintenance.backup_service.BaseFirebirdService.__init__",
+        return_value=None,
+    ):
+        service = BackupService.__new__(BackupService)
+        service.installation = MagicMock()
+        service.installation.gbak = gbak_path
+
+        BackupService.__init__(service)
+
+    assert service.gbak == gbak_path    

@@ -341,3 +341,33 @@ def test_sweep_uses_configured_database():
     assert service.database == Path(
         configured_database
     )
+def test_sweep_converts_string_database_to_path():
+
+    database = r"C:\test\database.fdb"
+
+    installation = MagicMock()
+    installation.gfix = Path(
+        r"C:\Firebird\gfix.exe"
+    )
+
+    with (
+        patch(
+            "services.firebird.maintenance.sweep_service.InstallationService"
+        ) as installation_cls,
+        patch(
+            "services.firebird.maintenance.sweep_service.Config"
+        ),
+        patch(
+            "services.firebird.maintenance.sweep_service.ProcessRunner"
+        ),
+    ):
+
+        installation_cls.return_value.first_installation.return_value = (
+            installation
+        )
+
+        service = SweepService(
+            database=database
+        )
+
+    assert service.database == Path(database)    

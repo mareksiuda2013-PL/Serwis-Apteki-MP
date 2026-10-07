@@ -641,3 +641,36 @@ def test_statistics_propagates_parser_error():
         ):
 
             service.statistics()
+def test_init_uses_provided_database():
+
+    database = Path("C:/test/custom.fdb")
+
+    cfg = MagicMock()
+    cfg.database = "C:/default/database.fdb"
+    cfg.user = "SYSDBA"
+    cfg.password = "masterkey"
+
+    installation = installation_mock()
+
+    with (
+        patch(
+            "services.firebird.base_firebird_service.Config",
+            return_value=cfg,
+        ),
+        patch(
+            "services.firebird.base_firebird_service.InstallationService"
+        ) as installation_cls,
+        patch(
+            "services.firebird.base_firebird_service.ProcessRunner"
+        ),
+    ):
+
+        installation_cls.return_value.first_installation.return_value = (
+            installation
+        )
+
+        service = StatisticsService(
+            database=database
+        )
+
+    assert service.database == database

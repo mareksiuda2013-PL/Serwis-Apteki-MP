@@ -874,3 +874,61 @@ def test_workflow_report_uses_configured_database():
     )
 
     assert result is expected
+
+# ==========================================================
+# ERROR PROPAGATION
+# ==========================================================
+
+
+def test_statistics_propagates_service_exception():
+
+    (
+        controller,
+        _,
+        statistics_service,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = create_controller()
+
+    statistics_service.statistics.side_effect = RuntimeError(
+        "B??d statystyk"
+    )
+
+    try:
+        controller.statistics()
+    except RuntimeError as exc:
+        assert str(exc) == "B??d statystyk"
+    else:
+        raise AssertionError(
+            "Controller powinien przekaza? wyj?tek dalej"
+        )
+
+
+def test_info_propagates_firebird_service_exception():
+
+    (
+        controller,
+        firebird,
+        _,
+        _,
+        _,
+        _,
+        _,
+        _,
+    ) = create_controller()
+
+    firebird.get_info.side_effect = RuntimeError(
+        "B??d Firebird"
+    )
+
+    try:
+        controller.info()
+    except RuntimeError as exc:
+        assert str(exc) == "B??d Firebird"
+    else:
+        raise AssertionError(
+            "Controller powinien przekaza? wyj?tek dalej"
+        )
