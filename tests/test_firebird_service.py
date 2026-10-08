@@ -691,3 +691,101 @@ def test_provided_database_has_priority_over_configured_database():
     database.size_gb.assert_called_once_with(
         provided_database
     )
+def test_get_info_passes_selected_database_to_statistics_service():
+    (
+        service,
+        config,
+        installation_service,
+        database,
+        firebird_service,
+    ) = create_service()
+
+    installation_service.first_installation.return_value = (
+        create_installation()
+    )
+
+    config.database = r"C:\configured\database.fdb"
+
+    database.exists.return_value = True
+    database.size_gb.return_value = 5.0
+    database.tables.return_value = 10
+
+    firebird_service.find_firebird_service.return_value = None
+
+    statistics = MagicMock()
+    statistics.ods = "13.0"
+    statistics.page_size = 8192
+    statistics.database_dialect = 3
+    statistics.page_buffers = 2048
+    statistics.sweep_interval = 20000
+    statistics.forced_writes = True
+
+    with patch(
+        "services.firebird.firebird_service.StatisticsService"
+    ) as statistics_cls:
+        statistics_cls.return_value.statistics.return_value = (
+            statistics
+        )
+
+        service.get_info()
+
+    statistics_cls.assert_called_once_with(
+        database=config.database
+    )
+
+
+def test_get_info_sets_table_count_to_zero_when_tables_returns_none():
+    (
+        service,
+        _,
+        installation_service,
+        database,
+        firebird_service,
+    ) = create_service()
+
+    installation_service.first_installation.return_value = (
+        create_installation()
+    )
+
+    database.exists.return_value = True
+    database.size_gb.return_value = 5.0
+    database.tables.return_value = None
+
+    firebird_service.find_firebird_service.return_value = None
+
+    with patch(
+        "services.firebird.firebird_service.StatisticsService"
+    ) as statistics_cls:
+        statistics_cls.return_value.statistics.side_effect = (
+            RuntimeError("test")
+        )
+
+        result = service.get_info()
+
+    assert result.tables == 0
+
+
+def test_get_info_uses_dash_for_none_version():
+    (
+        service,
+        _,
+        installation_service,
+        database,
+        firebird_service,
+    ) = create_service()
+
+    installation = create_installation()
+    installation.version = None
+
+    installation_service.first_installation.return_value = (
+        installation
+    )
+
+    database.exists.return_value = False
+    database.size_gb.return_value = 0.0
+
+    firebird_service.find_firebird_service.return_value = None
+
+    result = service.get_info()
+
+    assert result.version == "-"
