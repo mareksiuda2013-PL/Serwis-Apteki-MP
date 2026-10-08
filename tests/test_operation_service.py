@@ -602,3 +602,115 @@ def test_operation_process_failure_logs_error():
     logger.error.assert_called_once_with(
         "Operacja zakończona błędem: VALIDATE"
     )
+def test_process_result_success_without_output_uses_empty_message():
+    service = FirebirdOperationService()
+
+    class ResultWithoutOutput:
+        success = True
+        stdout = ""
+        stderr = ""
+        command = "TEST"
+        exit_code = 0
+        started = None
+        finished = None
+        duration = 0.0
+
+    result = service.execute(
+        lambda: ResultWithoutOutput(),
+        "TEST",
+    )
+
+    assert result.success is True
+    assert result.message == ""
+    assert result.output == ""
+    assert result.error == ""
+
+
+def test_process_result_failure_without_error_or_output_uses_empty_message():
+    service = FirebirdOperationService()
+
+    class ResultWithoutError:
+        success = False
+        stdout = ""
+        stderr = ""
+        command = "TEST"
+        exit_code = 1
+        started = None
+        finished = None
+        duration = 0.0
+
+    result = service.execute(
+        lambda: ResultWithoutError(),
+        "TEST",
+    )
+
+    assert result.success is False
+    assert result.message == ""
+    assert result.output == ""
+    assert result.error == ""
+
+
+def test_process_result_normalizes_none_exit_code_and_duration():
+    service = FirebirdOperationService()
+
+    class ResultWithNoneValues:
+        success = True
+        stdout = "OK"
+        stderr = ""
+        command = "TEST"
+        exit_code = None
+        started = None
+        finished = None
+        duration = None
+
+    result = service.execute(
+        lambda: ResultWithNoneValues(),
+        "TEST",
+    )
+
+    assert result.success is True
+    assert result.message == "OK"
+    assert result.exit_code == 0
+    assert result.duration == 0.0
+
+
+def test_process_result_preserves_started_and_finished_values():
+    service = FirebirdOperationService()
+
+    started = datetime(
+        2026,
+        10,
+        8,
+        12,
+        0,
+        0,
+    )
+
+    finished = datetime(
+        2026,
+        10,
+        8,
+        12,
+        0,
+        5,
+    )
+
+    process_result = FakeProcessResult(
+        success=True,
+        stdout="OK",
+        stderr="",
+        command="TEST",
+        exit_code=0,
+        started=started,
+        finished=finished,
+        duration=5.0,
+    )
+
+    result = service.execute(
+        lambda: process_result,
+        "TEST",
+    )
+
+    assert result.started == started
+    assert result.finished == finished
+    assert result.duration == 5.0    
