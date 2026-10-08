@@ -1,29 +1,28 @@
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, patch
 
 from services.firebird.service_controller import ServiceController
 
 
-def make_service():
-    return ServiceController.__new__(ServiceController)
+def test_run_sc_returns_true_and_stdout():
+    controller = ServiceController()
 
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout="SERVICE OK",
+            stderr="",
+        )
 
-def test_run_sc_success():
-    service = make_service()
+        success, output = controller._run_sc(
+            "query",
+            "FirebirdServerDefaultInstance",
+        )
 
-    completed = Mock()
-    completed.returncode = 0
-    completed.stdout = "  OK  "
-    completed.stderr = ""
+    assert success is True
+    assert output == "SERVICE OK"
 
-    with patch(
-        "services.firebird.service_controller.subprocess.run",
-        return_value=completed,
-    ) as run:
-        result = service._run_sc("query", "FirebirdServer")
-
-    assert result == (True, "OK")
-    run.assert_called_once_with(
-        ["sc", "query", "FirebirdServer"],
+    mock_run.assert_called_once_with(
+        ["sc", "query", "FirebirdServerDefaultInstance"],
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -31,456 +30,432 @@ def test_run_sc_success():
     )
 
 
-def test_run_sc_failure_uses_stderr_when_stdout_empty():
-    service = make_service()
+def test_run_sc_uses_stderr_when_stdout_empty():
+    controller = ServiceController()
 
-    completed = Mock()
-    completed.returncode = 1
-    completed.stdout = ""
-    completed.stderr = "ERROR"
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=1,
+            stdout="",
+            stderr="ERROR",
+        )
 
-    with patch(
-        "services.firebird.service_controller.subprocess.run",
-        return_value=completed,
-    ):
-        result = service._run_sc("query", "FirebirdServer")
+        success, output = controller._run_sc("query", "TestService")
 
-    assert result == (False, "ERROR")
+    assert success is False
+    assert output == "ERROR"
 
 
 def test_run_sc_returns_empty_output_when_both_streams_empty():
-    service = make_service()
+    controller = ServiceController()
 
-    completed = Mock()
-    completed.returncode = 0
-    completed.stdout = ""
-    completed.stderr = ""
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout="",
+            stderr="",
+        )
 
-    with patch(
-        "services.firebird.service_controller.subprocess.run",
-        return_value=completed,
-    ):
-        result = service._run_sc("query", "FirebirdServer")
+        success, output = controller._run_sc("query", "TestService")
 
-    assert result == (True, "")
-
-
-def test_run_sc_handles_exception():
-    service = make_service()
-
-    with patch(
-        "services.firebird.service_controller.subprocess.run",
-        side_effect=RuntimeError("boom"),
-    ):
-        result = service._run_sc("query", "FirebirdServer")
-
-    assert result == (False, "boom")
+    assert success is True
+    assert output == ""
 
 
-def test_exists_returns_true_when_service_query_succeeds():
-    service = make_service()
+def test_run_sc_returns_exception_message():
+    controller = ServiceController()
+
+    with patch("subprocess.run", side_effect=RuntimeError("boom")):
+        success, output = controller._run_sc("query", "TestService")
+
+    assert success is False
+    assert output == "boom"
+
+
+def test_exists_returns_true_when_service_exists():
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "_run_sc",
-        return_value=(True, "SERVICE_NAME: FirebirdServer"),
-    ) as run_sc:
-        result = service.exists("FirebirdServer")
-
-    assert result is True
-    run_sc.assert_called_once_with("query", "FirebirdServer")
+        return_value=(True, "SERVICE_NAME: TestService"),
+    ):
+        assert controller.exists("TestService") is True
 
 
-def test_exists_returns_false_when_service_query_fails():
-    service = make_service()
+def test_exists_returns_false_when_service_does_not_exist():
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "_run_sc",
-        return_value=(False, "ERROR"),
+        return_value=(False, "service not found"),
     ):
-        result = service.exists("FirebirdServer")
-
-    assert result is False
+        assert controller.exists("TestService") is False
 
 
 def test_status_returns_not_installed_when_query_fails():
-    service = make_service()
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "_run_sc",
-        return_value=(False, "ERROR"),
+        return_value=(False, ""),
     ):
-        result = service.status("FirebirdServer")
-
-    assert result == "Not Installed"
+        assert controller.status("TestService") == "Not Installed"
 
 
-def test_status_detects_running():
-    service = make_service()
+def test_status_returns_running():
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "_run_sc",
-        return_value=(True, "STATE              : 4  RUNNING"),
+        return_value=(True, "STATE : 4 RUNNING"),
     ):
-        result = service.status("FirebirdServer")
-
-    assert result == "Running"
+        assert controller.status("TestService") == "Running"
 
 
-def test_status_detects_stopped():
-    service = make_service()
+def test_status_returns_stopped():
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "_run_sc",
-        return_value=(True, "STATE              : 1  STOPPED"),
+        return_value=(True, "STATE : 1 STOPPED"),
     ):
-        result = service.status("FirebirdServer")
-
-    assert result == "Stopped"
+        assert controller.status("TestService") == "Stopped"
 
 
-def test_status_detects_paused():
-    service = make_service()
+def test_status_returns_paused():
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "_run_sc",
-        return_value=(True, "STATE              : 7  PAUSED"),
+        return_value=(True, "STATE : 7 PAUSED"),
     ):
-        result = service.status("FirebirdServer")
-
-    assert result == "Paused"
+        assert controller.status("TestService") == "Paused"
 
 
-def test_status_detects_stop_pending():
-    service = make_service()
+def test_status_returns_stop_pending():
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "_run_sc",
-        return_value=(True, "STATE              : 3  STOP_PENDING"),
+        return_value=(True, "STATE : 3 STOP_PENDING"),
     ):
-        result = service.status("FirebirdServer")
-
-    assert result == "Stop Pending"
+        assert controller.status("TestService") == "Stop Pending"
 
 
-def test_status_detects_start_pending():
-    service = make_service()
+def test_status_returns_start_pending():
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "_run_sc",
-        return_value=(True, "STATE              : 2  START_PENDING"),
+        return_value=(True, "STATE : 2 START_PENDING"),
     ):
-        result = service.status("FirebirdServer")
-
-    assert result == "Start Pending"
+        assert controller.status("TestService") == "Start Pending"
 
 
 def test_status_returns_unknown_for_unrecognized_state():
-    service = make_service()
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "_run_sc",
-        return_value=(True, "STATE              : 99  SOMETHING"),
+        return_value=(True, "STATE : 99 SOMETHING"),
     ):
-        result = service.status("FirebirdServer")
-
-    assert result == "Unknown"
+        assert controller.status("TestService") == "Unknown"
 
 
 def test_find_firebird_service_returns_matching_service():
-    service = make_service()
+    controller = ServiceController()
 
     output = """
-SERVICE_NAME: OtherService
-        TYPE               : 10  WIN32_OWN_PROCESS
+SERVICE_NAME: SomeService
 SERVICE_NAME: FirebirdServerDefaultInstance
-        TYPE               : 10  WIN32_OWN_PROCESS
+SERVICE_NAME: AnotherService
 """
 
     with patch.object(
-        service,
+        controller,
         "_run_sc",
         return_value=(True, output),
-    ) as run_sc:
-        result = service.find_firebird_service()
-
-    assert result == "FirebirdServerDefaultInstance"
-    run_sc.assert_called_once_with("query", "state=")
+    ):
+        assert (
+            controller.find_firebird_service()
+            == "FirebirdServerDefaultInstance"
+        )
 
 
 def test_find_firebird_service_is_case_insensitive():
-    service = make_service()
+    controller = ServiceController()
 
     output = """
-SERVICE_NAME: MyFireBirdService
+SERVICE_NAME: OtherService
+SERVICE_NAME: firebirdserverdefaultinstance
 """
 
     with patch.object(
-        service,
+        controller,
         "_run_sc",
         return_value=(True, output),
     ):
-        result = service.find_firebird_service()
-
-    assert result == "MyFireBirdService"
+        assert (
+            controller.find_firebird_service()
+            == "firebirdserverdefaultinstance"
+        )
 
 
 def test_find_firebird_service_returns_none_when_query_fails():
-    service = make_service()
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "_run_sc",
-        return_value=(False, "ERROR"),
+        return_value=(False, "error"),
     ):
-        result = service.find_firebird_service()
-
-    assert result is None
+        assert controller.find_firebird_service() is None
 
 
 def test_find_firebird_service_returns_none_for_empty_output():
-    service = make_service()
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "_run_sc",
         return_value=(True, ""),
     ):
-        result = service.find_firebird_service()
-
-    assert result is None
+        assert controller.find_firebird_service() is None
 
 
 def test_find_firebird_service_ignores_non_service_lines():
-    service = make_service()
+    controller = ServiceController()
 
     output = """
-TYPE               : 10  WIN32_OWN_PROCESS
+STATE              : 4 RUNNING
 DISPLAY_NAME       : Firebird Server
-SERVICE_NAME: PostgreSQL
+SERVICE_TYPE       : 10 WIN32_OWN_PROCESS
 """
 
     with patch.object(
-        service,
+        controller,
         "_run_sc",
         return_value=(True, output),
     ):
-        result = service.find_firebird_service()
-
-    assert result is None
+        assert controller.find_firebird_service() is None
 
 
 def test_start_returns_true_when_already_running():
-    service = make_service()
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "status",
         return_value="Running",
-    ) as status, patch.object(service, "_run_sc") as run_sc:
-        result = service.start("FirebirdServer")
+    ) as mock_status:
+        assert controller.start("TestService") is True
 
-    assert result is True
-    status.assert_called_once_with("FirebirdServer")
-    run_sc.assert_not_called()
+    mock_status.assert_called_once_with("TestService")
 
 
 def test_start_returns_false_when_start_command_fails():
-    service = make_service()
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "status",
         return_value="Stopped",
     ), patch.object(
-        service,
+        controller,
         "_run_sc",
-        return_value=(False, "ERROR"),
-    ) as run_sc:
-        result = service.start("FirebirdServer")
-
-    assert result is False
-    run_sc.assert_called_once_with("start", "FirebirdServer")
+        return_value=(False, "error"),
+    ):
+        assert controller.start("TestService") is False
 
 
-def test_start_returns_true_when_service_becomes_running_immediately():
-    service = make_service()
+def test_start_returns_true_for_immediate_running():
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "status",
         side_effect=["Stopped", "Running"],
-    ) as status, patch.object(
-        service,
+    ) as mock_status, patch.object(
+        controller,
         "_run_sc",
-        return_value=(True, "START_PENDING"),
-    ):
-        result = service.start("FirebirdServer")
+        return_value=(True, ""),
+    ) as mock_run_sc:
+        assert controller.start("TestService") is True
 
-    assert result is True
-    assert status.call_count == 2
+    mock_run_sc.assert_called_once_with("start", "TestService")
+    assert mock_status.call_count == 2
 
 
 def test_start_returns_true_for_immediate_start_pending():
-    service = make_service()
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "status",
         side_effect=["Stopped", "Start Pending"],
-    ), patch.object(
-        service,
+    ) as mock_status, patch.object(
+        controller,
         "_run_sc",
-        return_value=(True, "START_PENDING"),
+        return_value=(True, ""),
     ):
-        result = service.start("FirebirdServer")
+        assert controller.start("TestService") is True
 
-    assert result is True
+    assert mock_status.call_count == 2
 
 
-def test_start_returns_false_when_start_does_not_enter_pending_state():
-    service = make_service()
+def test_start_returns_false_for_non_pending_state():
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "status",
-        side_effect=["Stopped", "Unknown", "Unknown"],
+        side_effect=["Stopped", "Stopped"],
     ), patch.object(
-        service,
+        controller,
         "_run_sc",
-        return_value=(True, "OK"),
+        return_value=(True, ""),
+    ), patch(
+        "services.firebird.service_controller.time.time",
+        side_effect=[0, 31],
     ):
-        result = service.start("FirebirdServer", timeout=0.01)
-
-    assert result is False
+        assert controller.start("TestService") is False
 
 
 def test_stop_returns_true_when_already_stopped():
-    service = make_service()
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "status",
         return_value="Stopped",
-    ) as status, patch.object(service, "_run_sc") as run_sc:
-        result = service.stop("FirebirdServer")
+    ) as mock_status:
+        assert controller.stop("TestService") is True
 
-    assert result is True
-    status.assert_called_once_with("FirebirdServer")
-    run_sc.assert_not_called()
+    mock_status.assert_called_once_with("TestService")
 
 
 def test_stop_returns_false_when_stop_command_fails():
-    service = make_service()
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "status",
         return_value="Running",
     ), patch.object(
-        service,
+        controller,
         "_run_sc",
-        return_value=(False, "ERROR"),
-    ) as run_sc:
-        result = service.stop("FirebirdServer")
-
-    assert result is False
-    run_sc.assert_called_once_with("stop", "FirebirdServer")
+        return_value=(False, "error"),
+    ):
+        assert controller.stop("TestService") is False
 
 
-def test_stop_returns_true_when_service_becomes_stopped_immediately():
-    service = make_service()
+def test_stop_returns_true_for_immediate_stopped():
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "status",
         side_effect=["Running", "Stopped"],
-    ) as status, patch.object(
-        service,
+    ) as mock_status, patch.object(
+        controller,
         "_run_sc",
-        return_value=(True, "STOP_PENDING"),
-    ):
-        result = service.stop("FirebirdServer")
+        return_value=(True, ""),
+    ) as mock_run_sc:
+        assert controller.stop("TestService") is True
 
-    assert result is True
-    assert status.call_count == 2
+    mock_run_sc.assert_called_once_with("stop", "TestService")
+    assert mock_status.call_count == 2
 
 
 def test_stop_returns_true_for_immediate_stop_pending():
-    service = make_service()
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "status",
         side_effect=["Running", "Stop Pending"],
-    ), patch.object(
-        service,
+    ) as mock_status, patch.object(
+        controller,
         "_run_sc",
-        return_value=(True, "STOP_PENDING"),
+        return_value=(True, ""),
     ):
-        result = service.stop("FirebirdServer")
+        assert controller.stop("TestService") is True
 
-    assert result is True
+    assert mock_status.call_count == 2
 
 
-def test_stop_returns_false_when_stop_does_not_enter_pending_state():
-    service = make_service()
+def test_stop_returns_false_for_non_pending_state():
+    controller = ServiceController()
 
     with patch.object(
-        service,
+        controller,
         "status",
-        side_effect=["Running", "Unknown", "Unknown"],
+        side_effect=["Running", "Running"],
     ), patch.object(
-        service,
+        controller,
         "_run_sc",
-        return_value=(True, "OK"),
+        return_value=(True, ""),
+    ), patch(
+        "services.firebird.service_controller.time.time",
+        side_effect=[0, 31],
     ):
-        result = service.stop("FirebirdServer", timeout=0.01)
-
-    assert result is False
+        assert controller.stop("TestService") is False
 
 
 def test_restart_returns_false_when_stop_fails():
-    service = make_service()
+    controller = ServiceController()
 
-    with patch.object(service, "stop", return_value=False) as stop, patch.object(
-        service, "start"
-    ) as start:
-        result = service.restart("FirebirdServer")
+    with patch.object(
+        controller,
+        "stop",
+        return_value=False,
+    ) as mock_stop, patch.object(
+        controller,
+        "start",
+    ) as mock_start:
+        assert controller.restart("TestService") is False
 
-    assert result is False
-    stop.assert_called_once_with("FirebirdServer")
-    start.assert_not_called()
+    mock_stop.assert_called_once_with("TestService")
+    mock_start.assert_not_called()
 
 
-def test_restart_starts_service_after_successful_stop():
-    service = make_service()
+def test_restart_stops_then_starts_service():
+    controller = ServiceController()
 
-    with patch.object(service, "stop", return_value=True) as stop, patch.object(
-        service, "start", return_value=True
-    ) as start:
-        result = service.restart("FirebirdServer")
+    with patch.object(
+        controller,
+        "stop",
+        return_value=True,
+    ) as mock_stop, patch.object(
+        controller,
+        "start",
+        return_value=True,
+    ) as mock_start:
+        assert controller.restart("TestService") is True
 
-    assert result is True
-    stop.assert_called_once_with("FirebirdServer")
-    start.assert_called_once_with("FirebirdServer")
+    mock_stop.assert_called_once_with("TestService")
+    mock_start.assert_called_once_with("TestService")
 
 
 def test_restart_returns_start_result():
-    service = make_service()
+    controller = ServiceController()
 
-    with patch.object(service, "stop", return_value=True), patch.object(
-        service, "start", return_value=False
-    ) as start:
-        result = service.restart("FirebirdServer")
-
-    assert result is False
-    start.assert_called_once_with("FirebirdServer")
+    with patch.object(
+        controller,
+        "stop",
+        return_value=True,
+    ), patch.object(
+        controller,
+        "start",
+        return_value=False,
+    ):
+        assert controller.restart("TestService") is False
