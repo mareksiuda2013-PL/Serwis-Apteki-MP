@@ -2,6 +2,18 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+from services.firebird.database.diagnostics_service import (
+    DiagnosticsService,
+)
+from services.firebird.database.statistics_service import (
+    StatisticsService,
+)
+from services.firebird.maintenance.backup_service import (
+    BackupService,
+)
+from services.firebird.reporting.recommendation_service import (
+    RecommendationService,
+)
 from services.firebird.reporting.workflow_service import (
     WorkflowResult,
     WorkflowService,
@@ -497,6 +509,7 @@ def test_initial_diagnostic_exception_stops_workflow():
     )
 
     assert result.success is False
+
     assert result.error == (
         "Błąd diagnostyki początkowej: "
         "Statistics ERROR"
@@ -535,12 +548,15 @@ def test_initial_diagnostic_analyze_exception_stops_workflow():
     )
 
     assert result.success is False
+
     assert result.error == (
         "Błąd diagnostyki początkowej: "
         "Diagnostic ERROR"
     )
 
     assert len(result.steps) == 1
+
+    assert result.steps[0].status == "ERROR"
 
     backup_service.backup.assert_not_called()
 
@@ -695,6 +711,7 @@ def test_backup_failure_stops_workflow():
     )
 
     assert result.success is False
+
     assert result.error == (
         "Backup ERROR"
     )
@@ -702,6 +719,7 @@ def test_backup_failure_stops_workflow():
     assert len(result.steps) == 2
 
     assert result.steps[1].status == "ERROR"
+
     assert result.steps[1].message == (
         "Backup ERROR"
     )
@@ -1152,3 +1170,121 @@ def test_success_is_false_when_any_step_fails():
 
     assert result.success is False
     assert result.has_error is True
+
+
+# ==========================================================
+# ADDITIONAL WORKFLOW COVERAGE
+# ==========================================================
+
+
+def test_workflow_service_creates_default_services():
+
+    service = WorkflowService()
+
+    assert isinstance(
+        service.statistics_service,
+        StatisticsService,
+    )
+
+    assert isinstance(
+        service.diagnostics_service,
+        DiagnosticsService,
+    )
+
+    assert isinstance(
+        service.recommendation_service,
+        RecommendationService,
+    )
+
+    assert isinstance(
+        service.backup_service,
+        BackupService,
+    )
+
+
+def test_successful_workflow_calls_services_expected_number_of_times():
+
+    (
+        service,
+        statistics_service,
+        diagnostics_service,
+        recommendation_service,
+        backup_service,
+    ) = create_workflow()
+
+    statistics_service.statistics.side_effect = [
+        MagicMock(),
+        MagicMock(),
+    ]
+
+    diagnostics_service.analyze.side_effect = [
+        create_diagnostic(),
+        create_diagnostic(),
+    ]
+
+    backup_service.backup.return_value = (
+        True,
+        "Backup OK",
+    )
+
+    recommendation_service.recommend.return_value = (
+        create_recommendations()
+    )
+
+    result = service.run(
+        "C:/backup/test.fbk"
+    )
+
+    assert result.success is True
+
+    assert statistics_service.statistics.call_count == 2
+    assert diagnostics_service.analyze.call_count == 2
+    assert backup_service.backup.call_count == 1
+    assert recommendation_service.recommend.call_count == 1
+
+
+def test_successful_workflow_calls_services_in_correct_order():
+
+    (
+        service,
+        statistics_service,
+        diagnostics_service,
+        recommendation_service,
+        backup_service,
+    ) = create_workflow()
+
+    calls = []
+
+    statistics_service.statistics.side_effect = (
+        lambda: calls.append("statistics") or MagicMock()
+    )
+
+    diagnostics_service.analyze.side_effect = (
+        lambda stats: calls.append("diagnostic")
+        or create_diagnostic()
+    )
+
+    backup_service.backup.side_effect = (
+        lambda path: calls.append("backup")
+        or (True, "Backup OK")
+    )
+
+    recommendation_service.recommend.side_effect = (
+        lambda diagnostic: calls.append("recommendations")
+        or create_recommendations()
+    )
+
+    result = service.run(
+        "C:/backup/test.fbk"
+    )
+
+    assert result.success is True
+
+    assert calls == [
+        "statistics",
+        "diagnostic",
+        "backup",
+        "statistics",
+        "diagnostic",
+        "recommendations",
+    ]
