@@ -155,3 +155,53 @@ def test_creates_process_runner():
 
     runner_cls.assert_called_once_with()
     assert service.runner is runner_cls.return_value
+def test_converts_provided_database_string_to_path():
+    cfg = MagicMock()
+    cfg.database = "ignored.fdb"
+
+    custom_database = r"D:\TEST\CUSTOM.FDB"
+
+    with (
+        patch(
+            "services.firebird.base_firebird_service.Config",
+            return_value=cfg,
+        ),
+        patch(
+            "services.firebird.base_firebird_service.InstallationService"
+        ) as installation_cls,
+        patch(
+            "services.firebird.base_firebird_service.ProcessRunner"
+        ),
+    ):
+        installation_cls.return_value.first_installation.return_value = (
+            installation_mock()
+        )
+
+        service = BaseFirebirdService(database=custom_database)
+
+    assert service.database == Path(custom_database)
+
+
+def test_calls_first_installation_once():
+    cfg = MagicMock()
+    cfg.database = "db.fdb"
+
+    with (
+        patch(
+            "services.firebird.base_firebird_service.Config",
+            return_value=cfg,
+        ),
+        patch(
+            "services.firebird.base_firebird_service.InstallationService"
+        ) as installation_cls,
+        patch(
+            "services.firebird.base_firebird_service.ProcessRunner"
+        ),
+    ):
+        installation_cls.return_value.first_installation.return_value = (
+            installation_mock()
+        )
+
+        BaseFirebirdService()
+
+    installation_cls.return_value.first_installation.assert_called_once_with()    
