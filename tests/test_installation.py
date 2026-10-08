@@ -367,3 +367,54 @@ def test_first_installation_uses_first_matching_root(
 
     assert result is not None
     assert result.install_path == first
+def test_init_uses_default_roots_when_roots_not_provided():
+    service = InstallationService()
+
+    assert service.roots == InstallationService.DEFAULT_ROOTS
+
+
+def test_first_installation_is_case_insensitive_for_folder_name(
+    tmp_path: Path,
+):
+    root = tmp_path / "Firebird"
+    root.mkdir()
+
+    firebird = root / "fIrEbIrD_5_0"
+    firebird.mkdir()
+
+    service = InstallationService(
+        roots=(root,)
+    )
+
+    result = service.first_installation()
+
+    assert result is not None
+    assert result.install_path == firebird
+    assert result.version == "fIrEbIrD_5_0"
+
+
+def test_first_installation_returns_installation_without_tools(
+    tmp_path: Path,
+):
+    root = tmp_path / "Firebird"
+    root.mkdir()
+
+    firebird = root / "Firebird_5_0"
+    firebird.mkdir()
+
+    service = InstallationService(
+        roots=(root,)
+    )
+
+    result = service.first_installation()
+
+    assert result is not None
+    assert result.install_path == firebird
+    assert result.version == "Firebird_5_0"
+
+    assert result.fbclient is None
+    assert result.isql is None
+    assert result.gbak is None
+    assert result.gfix is None
+    assert result.gstat is None
+    assert result.firebird_conf is None    
