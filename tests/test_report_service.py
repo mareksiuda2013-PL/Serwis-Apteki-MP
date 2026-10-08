@@ -1,4 +1,5 @@
 from __future__ import annotations
+import pytest
 
 from services.firebird.reporting.report_service import (
     ReportService,
@@ -1169,3 +1170,166 @@ def test_generate_workflow_report_final_warning_has_warning_status():
     )
 
     assert result.status == "WARNING"
+# ==========================================================
+# ADDITIONAL COVERAGE
+# ==========================================================
+
+
+def test_workflow_summary_with_empty_final_diagnostic_message():
+
+    service = create_service()
+
+    workflow = WorkflowResult(
+        success=True,
+        final_diagnostic=create_diagnostic(
+            message="",
+        ),
+    )
+
+    assert service._workflow_summary(
+        workflow
+    ) == (
+        "Workflow zakończony pomyślnie."
+    )
+
+
+def test_generate_workflow_report_with_all_sections():
+
+    service = create_service()
+
+    workflow = WorkflowResult(
+        success=True,
+        backup_file="C:/backup/test.fbk",
+        initial_diagnostic=create_diagnostic(
+            status="warning",
+            message="Initial warning",
+        ),
+        final_diagnostic=create_diagnostic(
+            status="success",
+            message="Final OK",
+        ),
+        recommendations=type(
+            "RecommendationMock",
+            (),
+            {
+                "recommendations": [
+                    "Recommendation 1",
+                    "Recommendation 2",
+                ]
+            },
+        )(),
+    )
+
+    workflow.steps = [
+        type(
+            "Step",
+            (),
+            {
+                "name": "Backup",
+                "status": "success",
+                "message": "Backup OK",
+            },
+        )(),
+        type(
+            "Step",
+            (),
+            {
+                "name": "Validate",
+                "status": "warning",
+                "message": "Validate WARNING",
+            },
+        )(),
+    ]
+
+    result = service.generate_workflow_report(
+        database="TEST.FDB",
+        workflow=workflow,
+    )
+
+    assert result.database == "TEST.FDB"
+    assert result.status == "OK"
+
+    assert any(
+        item.section == "Workflow"
+        and item.name == "Backup"
+        for item in result.items
+    )
+
+    assert any(
+        item.section == "Backup"
+        and item.name == "Plik backupu"
+        for item in result.items
+    )
+
+    assert any(
+        item.section == "Diagnostyka początkowa"
+        and item.name == "Status"
+        for item in result.items
+    )
+
+    assert any(
+        item.section == "Diagnostyka końcowa"
+        and item.name == "Status"
+        for item in result.items
+    )
+
+    assert result.recommendations == [
+        "Recommendation 1",
+        "Recommendation 2",
+    ]
+
+
+def test_statistics_contains_remaining_values():
+
+    service = create_service()
+
+    result = service.generate(
+        database="TEST.FDB",
+        statistics=create_statistics(),
+        health=create_health(),
+    )
+
+    expected = {
+        "Oldest Transaction": "100",
+        "Oldest Active": "150",
+        "Oldest Snapshot": "120",
+        "Next Transaction": "500",
+        "Database Dialect": "3",
+        "Generation": "42",
+    }
+
+    for name, value in expected.items():
+
+        item = next(
+            item
+            for item in result.items
+            if (
+                item.section == "Statystyki"
+                and item.name == name
+            )
+        )
+
+        assert item.value == value
+
+
+@pytest.mark.parametrize(
+    "status,expected",
+    [
+        ("WARNING", "WARNING"),
+        ("ERROR", "ERROR"),
+        ("PENDING", "INFO"),
+        ("INFO", "INFO"),
+        ("UNKNOWN", "INFO"),
+    ],
+)
+def test_normalize_uppercase_statuses(
+    status,
+    expected,
+):
+
+    assert (
+        ReportService._normalize_status(
+            status
+        )
+        == expected
+    )    
