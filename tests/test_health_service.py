@@ -831,3 +831,63 @@ def test_check_contains_expected_names():
         "Force Write",
         "No Reserve",
     ]
+def test_final_status_counts_multiple_errors():
+
+    service = create_service()
+
+    health = DatabaseHealth()
+
+    health.checks.extend(
+        [
+            HealthCheck(
+                name="ERROR 1",
+                status="ERROR",
+                value="-",
+                message="ERROR 1",
+            ),
+            HealthCheck(
+                name="ERROR 2",
+                status="ERROR",
+                value="-",
+                message="ERROR 2",
+            ),
+        ]
+    )
+
+    service._calculate_status(health)
+
+    assert health.status == "ERROR"
+    assert health.summary == (
+        "Wykryto 2 problemów."
+    )
+
+
+def test_final_status_error_has_priority_over_warning():
+
+    service = create_service()
+
+    health = DatabaseHealth()
+
+    health.checks.extend(
+        [
+            HealthCheck(
+                name="WARNING",
+                status="WARNING",
+                value="-",
+                message="WARNING",
+            ),
+            HealthCheck(
+                name="ERROR",
+                status="ERROR",
+                value="-",
+                message="ERROR",
+            ),
+        ]
+    )
+
+    service._calculate_status(health)
+
+    assert health.status == "ERROR"
+    assert health.summary == (
+        "Wykryto 1 problemów."
+    )
