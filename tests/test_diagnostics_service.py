@@ -458,6 +458,40 @@ def test_transaction_just_below_error_threshold_is_warning():
 
 
 # ==========================================================
+# ACTIVE / SNAPSHOT LARGE GAPS DO NOT CREATE ERROR
+# ==========================================================
+
+
+def test_large_active_and_snapshot_gaps_do_not_create_error():
+
+    service = create_service()
+
+    result = service.analyze(
+        create_stats(
+            oldest_transaction=0,
+            oldest_active=1_000_000,
+            oldest_snapshot=1_000_000,
+            next_transaction=100,
+        )
+    )
+
+    assert result.active_gap == 1_000_000
+    assert result.snapshot_gap == 1_000_000
+
+    assert result.status == "warning"
+
+    assert (
+        "Duży dystans aktywnej transakcji."
+        in result.message
+    )
+
+    assert (
+        "Duży dystans snapshot."
+        in result.message
+    )
+
+
+# ==========================================================
 # DEFAULT RESULT VALUES
 # ==========================================================
 
