@@ -38,6 +38,7 @@ def test_load_empty_file(tmp_path: Path):
     service = ConfigService()
 
     config_path = tmp_path / "firebird.conf"
+
     config_path.write_text(
         "",
         encoding="utf-8",
@@ -194,7 +195,7 @@ def test_load_ignores_empty_comments_and_invalid_lines(
 
     config_path.write_text(
         """
-        
+
 # comment
 
 This line has no equals sign
@@ -217,4 +218,47 @@ Guardian = yes
 
     assert result.remote_service_port == 3055
     assert result.guardian is True
-    
+
+
+def test_load_keys_are_case_insensitive(
+    tmp_path: Path,
+):
+
+    service = ConfigService()
+
+    config_path = tmp_path / "firebird.conf"
+
+    config_path.write_text(
+        """
+remoteserviceport = 3060
+GUARDIAN = ON
+rootdirectory = C:\\Firebird
+tempdirectories = C:\\Temp
+""",
+        encoding="utf-8",
+    )
+
+    result = service.load(config_path)
+
+    assert result.remote_service_port == 3060
+    assert result.guardian is True
+    assert result.root_directory == r"C:\Firebird"
+    assert result.temp_directories == r"C:\Temp"
+
+
+def test_load_preserves_equals_inside_value(
+    tmp_path: Path,
+):
+
+    service = ConfigService()
+
+    config_path = tmp_path / "firebird.conf"
+
+    config_path.write_text(
+        "CustomValue = one=two=three\n",
+        encoding="utf-8",
+    )
+
+    result = service.load(config_path)
+
+    assert result.raw["CustomValue"] == "one=two=three"
