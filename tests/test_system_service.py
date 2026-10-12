@@ -125,13 +125,13 @@ def test_get_info_returns_system_info(
     ]
 
     service = create_service()
-
+    
     result = service.get_info()
 
     assert result.computer_name == "TEST-PC"
     assert result.user == "marek"
 
-    assert result.windows == "Windows"
+    assert result.windows == "Windows 10 Pro"
     assert result.windows_version == "10.0"
     assert result.windows_architecture == "AMD64"
 
