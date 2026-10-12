@@ -1,3 +1,6 @@
-from .network_service import NetworkService
+from .network_service import NetworkInfo, NetworkService
 
-__all__ = ["NetworkService"]
+__all__ = [
+    "NetworkInfo",
+    "NetworkService",
+]

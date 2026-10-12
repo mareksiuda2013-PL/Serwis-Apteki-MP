@@ -8,6 +8,8 @@ from PySide6.QtWidgets import QWidget
 from modules.dashboard import DashboardPage
 from modules.firebird.page import FirebirdPage
 from gui.page import Page
+from modules.kamsoft import KamsoftPage
+from modules.network import NetworkPage
 
 
 @dataclass(slots=True)
@@ -66,7 +68,7 @@ class ModuleManager:
                 id="kamsoft",
                 name="Kamsoft",
                 icon="💊",
-                widget=Page("Kamsoft"),
+                widget=KamsoftPage(),
             )
         )
 
@@ -75,9 +77,10 @@ class ModuleManager:
                 id="network",
                 name="Sieć",
                 icon="🌐",
-                widget=Page("Sieć"),
+                widget=NetworkPage(),
+)
             )
-        )
+        
 
         self.register(
             Module(

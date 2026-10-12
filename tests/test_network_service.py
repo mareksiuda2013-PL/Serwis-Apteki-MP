@@ -1,176 +1,59 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
-import socket
-import subprocess
-from dataclasses import dataclass
-
-import psutil
+from services.network import NetworkService, NetworkInfo
 
 
-@dataclass(slots=True)
-class NetworkInfo:
+def test_network_service_can_be_created():
+    service = NetworkService()
 
-    local_ip: str = ""
-    gateway: str = ""
-    internet: bool = False
+    assert isinstance(service, NetworkService)
 
 
-class NetworkService:
-    """
-    Pobiera podstawowe informacje o sieci Windows.
-    """
+def test_get_info_returns_network_info():
+    service = NetworkService()
 
-    def get_info(self) -> NetworkInfo:
+    result = service.get_info()
 
-        info = NetworkInfo()
+    assert isinstance(result, NetworkInfo)
 
-        # ==================================================
-        # ADAPTERY SIECIOWE
-        # ==================================================
 
-        try:
+def test_local_ip_is_string():
+    service = NetworkService()
 
-            interfaces = psutil.net_if_addrs()
+    result = service.get_info()
 
-            stats = psutil.net_if_stats()
+    assert isinstance(result.local_ip, str)
 
-            for interface_name, addresses in interfaces.items():
 
-                # pomijamy interfejsy wyłączone
-                if interface_name in stats:
+def test_gateway_is_string():
+    service = NetworkService()
 
-                    if not stats[interface_name].isup:
-                        continue
+    result = service.get_info()
 
-                for address in addresses:
+    assert isinstance(result.gateway, str)
 
-                    if address.family != socket.AF_INET:
-                        continue
 
-                    ip = address.address
+def test_internet_is_boolean():
+    service = NetworkService()
 
-                    # pomijamy localhost
-                    if ip.startswith("127."):
-                        continue
+    result = service.get_info()
 
-                    # pierwsze znalezione IPv4
-                    info.local_ip = ip
-                    break
+    assert isinstance(result.internet, bool)
 
-                if info.local_ip:
-                    break
 
-        except Exception:
+def test_network_info_default_values():
+    info = NetworkInfo()
 
-            info.local_ip = ""
+    assert info.local_ip == ""
+    assert info.gateway == ""
+    assert info.internet is False
 
-        # ==================================================
-        # LOKALNY ADRES Z ROUTINGU SOCKET
-        # ==================================================
 
-        if not info.local_ip:
+def test_get_info_can_be_called_twice():
+    service = NetworkService()
 
-            try:
+    first = service.get_info()
+    second = service.get_info()
 
-                sock = socket.socket(
-                    socket.AF_INET,
-                    socket.SOCK_DGRAM,
-                )
-
-                try:
-
-                    sock.connect(
-                        ("8.8.8.8", 80)
-                    )
-
-                    local_address = (
-                        sock.getsockname()[0]
-                    )
-
-                finally:
-
-                    sock.close()
-
-                if local_address:
-                    info.local_ip = local_address
-
-            except OSError:
-
-                pass
-
-        # ==================================================
-        # GATEWAY WINDOWS
-        # ==================================================
-
-        try:
-
-            result = subprocess.run(
-                [
-                    "route",
-                    "print",
-                    "-4",
-                ],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                errors="ignore",
-                timeout=2,
-                creationflags=getattr(
-                    subprocess,
-                    "CREATE_NO_WINDOW",
-                    0,
-                ),
-            )
-
-            for line in result.stdout.splitlines():
-
-                line = line.strip()
-
-                if not line:
-                    continue
-
-                parts = line.split()
-
-                if len(parts) < 4:
-                    continue
-
-                destination = parts[0]
-                mask = parts[1]
-                gateway = parts[2]
-
-                if (
-                    destination == "0.0.0.0"
-                    and mask == "0.0.0.0"
-                    and gateway != "On-link"
-                ):
-
-                    info.gateway = gateway
-                    break
-
-        except (
-            OSError,
-            subprocess.SubprocessError,
-        ):
-
-            info.gateway = ""
-
-        # ==================================================
-        # INTERNET
-        # ==================================================
-
-        try:
-
-            connection = socket.create_connection(
-                ("8.8.8.8", 53),
-                timeout=1,
-            )
-
-            connection.close()
-
-            info.internet = True
-
-        except OSError:
-
-            info.internet = False
-
-        return info
+    assert isinstance(first, NetworkInfo)
+    assert isinstance(second, NetworkInfo)

@@ -115,5 +115,3 @@ class FirebirdEngine:
             "MEND",
         )
 
-
-engine = FirebirdEngine()

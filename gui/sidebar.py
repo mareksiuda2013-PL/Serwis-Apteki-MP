@@ -12,14 +12,7 @@ class Sidebar(QWidget):
         self.menu = QListWidget()
 
         items = [
-            "Dashboard",
-            "Bazy danych",
-            "Firebird",
-            "Kamsoft",
-            "Diagnostyka",
-            "Narzędzia",
-            "Raporty",
-            "Ustawienia"
+            
         ]
 
         self.menu.addItems(items)

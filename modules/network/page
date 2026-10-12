@@ -1,0 +1,166 @@
+from __future__ import annotations
+
+from PySide6.QtWidgets import (
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
+
+from services.network import NetworkService
+
+
+class NetworkPage(QWidget):
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        self.service = NetworkService()
+
+        self._build_ui()
+        self._refresh()
+
+    def _build_ui(self) -> None:
+
+        layout = QVBoxLayout(self)
+
+        title = QLabel("Sieć")
+        title.setStyleSheet(
+            """
+            QLabel {
+                font-size: 26px;
+                font-weight: bold;
+            }
+            """
+        )
+
+        layout.addWidget(title)
+
+        description = QLabel(
+            "Informacje i podstawowa diagnostyka połączenia sieciowego."
+        )
+
+        layout.addWidget(description)
+
+        # ==================================================
+        # INFORMACJE
+        # ==================================================
+
+        info_group = QGroupBox("Informacje o sieci")
+        info_layout = QVBoxLayout(info_group)
+
+        self.ip_label = QLabel("Adres IP: —")
+        self.gateway_label = QLabel("Brama: —")
+        self.internet_label = QLabel("Internet: —")
+
+        info_layout.addWidget(self.ip_label)
+        info_layout.addWidget(self.gateway_label)
+        info_layout.addWidget(self.internet_label)
+
+        layout.addWidget(info_group)
+
+        # ==================================================
+        # STATUS
+        # ==================================================
+
+        status_group = QGroupBox("Status")
+
+        status_layout = QHBoxLayout(status_group)
+
+        self.status_label = QLabel(
+            "Nie wykonano diagnostyki."
+        )
+
+        self.status_label.setStyleSheet(
+            """
+            QLabel {
+                font-size: 18px;
+                font-weight: bold;
+            }
+            """
+        )
+
+        status_layout.addWidget(
+            self.status_label
+        )
+
+        layout.addWidget(status_group)
+
+        # ==================================================
+        # NARZĘDZIA
+        # ==================================================
+
+        tools_group = QGroupBox("Narzędzia")
+        tools_layout = QHBoxLayout(tools_group)
+
+        self.refresh_button = QPushButton(
+            "Odśwież"
+        )
+
+        self.refresh_button.clicked.connect(
+            self._refresh
+        )
+
+        tools_layout.addWidget(
+            self.refresh_button
+        )
+
+        layout.addWidget(tools_group)
+
+        layout.addStretch()
+
+    def _refresh(self) -> None:
+
+        self.refresh_button.setEnabled(False)
+
+        try:
+            info = self.service.get_info()
+
+            self.ip_label.setText(
+                f"Adres IP: {info.local_ip or 'nie wykryto'}"
+            )
+
+            self.gateway_label.setText(
+                f"Brama: {info.gateway or 'nie wykryto'}"
+            )
+
+            if info.internet:
+                self.internet_label.setText(
+                    "Internet: DOSTĘPNY"
+                )
+
+                self.status_label.setText(
+                    "STATUS: OK"
+                )
+
+            else:
+                self.internet_label.setText(
+                    "Internet: BRAK DOSTĘPU"
+                )
+
+                self.status_label.setText(
+                    "STATUS: BRAK INTERNETU"
+                )
+
+        except Exception as exc:
+
+            self.ip_label.setText(
+                "Adres IP: błąd"
+            )
+
+            self.gateway_label.setText(
+                "Brama: błąd"
+            )
+
+            self.internet_label.setText(
+                "Internet: błąd"
+            )
+
+            self.status_label.setText(
+                f"STATUS: BŁĄD — {exc}"
+            )
+
+        finally:
+            self.refresh_button.setEnabled(True)
