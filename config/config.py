@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import os
+import sys
 from configparser import ConfigParser
 from pathlib import Path
 
 from core.secure_storage import (
+    SecureStorageError,
     decrypt_text,
     encrypt_text,
-    SecureStorageError,
 )
 from core.settings import settings
 
@@ -15,25 +17,37 @@ BASE_DIR = Path(__file__).resolve().parent
 DEFAULT_CONFIG_PATH = BASE_DIR / "config.ini"
 
 
+def get_application_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+
+    return BASE_DIR.parent
+
+
+def get_application_data_dir() -> Path:
+    local_app_data = os.environ.get("LOCALAPPDATA")
+
+    if local_app_data:
+        return Path(local_app_data) / "SerwisAptekiMP"
+
+    return Path.home() / "AppData" / "Local" / "SerwisAptekiMP"
+
+
+def get_config_path() -> Path:
+    if getattr(sys, "frozen", False):
+        return get_application_data_dir() / "config.ini"
+
+    return DEFAULT_CONFIG_PATH
+
+
 class Config:
     def __init__(
         self,
         path: Path | str | None = None,
         settings_store=None,
     ):
-        self.path = (
-            Path(path)
-            if path is not None
-            else DEFAULT_CONFIG_PATH
-        )
-
+        self.path = Path(path) if path is not None else get_config_path()
         self.parser = ConfigParser()
-
-        self.parser.read(
-            self.path,
-            encoding="utf-8",
-        )
-
         self._password_override: str | None = None
 
         if settings_store is not None:
@@ -43,16 +57,62 @@ class Config:
         else:
             self._settings = None
 
-    def _is_default_config(self) -> bool:
-        """Sprawdza, czy używany jest produkcyjny config.ini."""
+        if not self.path.exists():
+            self._migrate_old_frozen_config()
 
+        if not self.path.exists():
+            self._create_default_config()
+
+        self.parser.read(self.path, encoding="utf-8")
+
+    def _is_default_config(self) -> bool:
         try:
-            return (
-                self.path.resolve()
-                == DEFAULT_CONFIG_PATH.resolve()
-            )
+            return self.path.resolve() == DEFAULT_CONFIG_PATH.resolve()
         except OSError:
             return self.path == DEFAULT_CONFIG_PATH
+
+    def _migrate_old_frozen_config(self) -> None:
+        if not getattr(sys, "frozen", False):
+            return
+
+        old_config = (
+            get_application_dir()
+            / "config"
+            / "config.ini"
+        )
+
+        if not old_config.exists():
+            return
+
+        self.path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        self.path.write_text(
+            old_config.read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
+
+    def _create_default_config(self) -> None:
+        self.path.parent.mkdir(
+            parents=True,
+            exist_ok=True,
+        )
+
+        parser = ConfigParser()
+
+        parser["Firebird"] = {
+            "database": r"C:\KSBAZA\KS-APW\WAPTEKA.FDB",
+            "user": "SYSDBA",
+            "password": "",
+        }
+
+        with self.path.open(
+            "w",
+            encoding="utf-8",
+        ) as config_file:
+            parser.write(config_file)
 
     @property
     def database(self) -> str:
@@ -74,18 +134,6 @@ class Config:
 
     @property
     def password(self) -> str:
-        """
-        Zwraca hasło Firebird.
-
-        Kolejność:
-        1. wartość ustawiona w pamięci obiektu,
-        2. zaszyfrowane hasło w SQLite,
-        3. stare hasło z config.ini.
-
-        Stare hasło z produkcyjnego config.ini zostanie
-        automatycznie zmigrowane do bezpiecznego magazynu.
-        """
-
         if self._password_override is not None:
             return self._password_override
 
@@ -117,23 +165,9 @@ class Config:
 
     @password.setter
     def password(self, value: str) -> None:
-        """
-        Ustawia hasło tylko w pamięci bieżącego obiektu.
-
-        Dzięki temu istniejące testy i usługi mogą nadal
-        wykonywać np. config.password = "masterkey",
-        bez zapisywania hasła do produkcyjnej bazy ustawień.
-        """
-
         self._password_override = value
 
     def save_password(self, value: str) -> None:
-        """
-        Zapisuje hasło w bezpiecznym magazynie Windows DPAPI.
-
-        Jawne hasło z config.ini jest usuwane.
-        """
-
         if self._settings is None:
             raise RuntimeError(
                 "Bezpieczny magazyn ustawień nie jest dostępny "
@@ -142,7 +176,6 @@ class Config:
 
         if value:
             encrypted = encrypt_text(value)
-
             self._settings.set(
                 "firebird.password",
                 encrypted,
@@ -154,12 +187,9 @@ class Config:
             )
 
         self._password_override = value
-
         self._remove_plaintext_password()
 
     def save_user(self, value: str) -> None:
-        """Zapisuje użytkownika Firebird do config.ini."""
-
         if not self.parser.has_section("Firebird"):
             self.parser.add_section("Firebird")
 
@@ -172,8 +202,6 @@ class Config:
         self._write_config()
 
     def _remove_plaintext_password(self) -> None:
-        """Usuwa jawne hasło z config.ini."""
-
         if not self.parser.has_section("Firebird"):
             return
 
@@ -192,8 +220,6 @@ class Config:
         self._write_config()
 
     def _write_config(self) -> None:
-        """Zapisuje aktualną konfigurację do pliku."""
-
         self.path.parent.mkdir(
             parents=True,
             exist_ok=True,
