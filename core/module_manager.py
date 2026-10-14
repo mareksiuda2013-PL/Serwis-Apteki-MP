@@ -5,13 +5,14 @@ from typing import Optional
 
 from PySide6.QtWidgets import QWidget
 
-from gui.page import Page
 from modules.dashboard import DashboardPage
 from modules.firebird.page import FirebirdPage
 from modules.kamsoft import KamsoftPage
 from modules.network import NetworkPage
 from modules.printers import PrintersPage
 from modules.windows import WindowsPage
+from modules.reports import ReportsPage
+from modules.settings import SettingsPage
 
 
 @dataclass(slots=True)
@@ -30,10 +31,6 @@ class ModuleManager:
 
     def __init__(self) -> None:
         self._modules: list[Module] = []
-
-    # ---------------------------------------------------------
-    # Public
-    # ---------------------------------------------------------
 
     @property
     def modules(self) -> list[Module]:
@@ -105,7 +102,7 @@ class ModuleManager:
                 id="reports",
                 name="Raporty",
                 icon="📊",
-                widget=Page("Raporty"),
+                widget=ReportsPage(),
             )
         )
 
@@ -114,7 +111,7 @@ class ModuleManager:
                 id="settings",
                 name="Ustawienia",
                 icon="⚙",
-                widget=Page("Ustawienia"),
+                widget=SettingsPage(),
             )
         )
 
